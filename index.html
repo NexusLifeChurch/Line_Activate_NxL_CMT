@@ -116,6 +116,18 @@
             margin: 20px auto;
             display: none;
         }
+        
+        #checking-status {
+            color: var(--primary-brown);
+            font-size: 0.9rem;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -174,11 +186,14 @@
                 <p id="user-status" class="status"></p>
                 
                 <div id="action-area">
-                    <button class="btn-activate" onclick="startActivation()">Activate Digital Card</button>
+                    <!-- แสดงข้อความกำลังตรวจสอบ แทนปุ่ม -->
+                    <p id="checking-status">กำลังเชื่อมต่อระบบสมาชิก...</p>
+                    <!-- ปุ่ม Retry จะซ่อนอยู่ และแสดงเมื่อ Error เท่านั้น -->
+                    <button id="btn-retry" class="btn-activate" onclick="startActivation()" style="display:none;">ลองใหม่อีกครั้ง</button>
                 </div>
 
                 <!-- Version Indicator -->
-                <p class="version-text">Ver 1.0.1</p>
+                <p class="version-text">Ver 1.0.2 (Auto Check)</p>
             </div>
         </div>
     </div>
@@ -206,8 +221,8 @@
                 liffProfile = await liff.getProfile();
                 renderProfile(liffProfile);
                 
-                // ลอง ping server เบาๆ แบบไม่รอผล (เพื่อ wake up script)
-                fetch(GAS_API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'ping' }) });
+                // --- ปรับปรุง Flow: ตรวจสอบอัตโนมัติทันที ---
+                startActivation(); 
 
             } catch (error) {
                 console.error(error);
@@ -228,19 +243,37 @@
             document.getElementById('user-status').innerText = profile.statusMessage || '';
         }
 
-        // --- Core Action: Start Activate (Updated with Better Debugging) ---
+        // --- Core Action: Start Check Logic ---
         async function startActivation() {
+            // ซ่อนปุ่ม Retry, แสดงสถานะ checking
+            document.getElementById('btn-retry').style.display = 'none';
+            document.getElementById('checking-status').style.display = 'block';
+
+            // ใช้ SweetAlert แบบ Toast หรือ Loading เพื่อบอกว่ากำลังทำงาน
+            // แต่อย่าเพิ่ง Block นานเกินไป ให้ดูเนียนๆ กับหน้าจอ
+            const loadingToast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // ถ้าอยากให้ Block หน้าจอชัดเจน ใช้ Swal.fire ปกติ
+            // ตาม Flow ที่ให้มา "ระบบจะเช็ค" ควรให้ User เห็นว่ากำลังเช็ค
             Swal.fire({
-                title: 'กำลังเชื่อมต่อระบบสมาชิก...',
+                title: 'กำลังตรวจสอบข้อมูล...',
+                text: 'กรุณารอสักครู่',
+                allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading();
-                },
-                allowOutsideClick: false
+                }
             });
 
             try {
                 // ยิง Request ไปเช็ค User
-                // ใช้ headers text/plain เพื่อหลบ CORS Preflight
                 const response = await fetch(GAS_API_URL, {
                     redirect: "follow",
                     method: 'POST',
@@ -252,7 +285,6 @@
                     throw new Error(`Server returned status: ${response.status}`);
                 }
 
-                // อ่านค่า Text ก่อน แล้วค่อย Parse JSON เพื่อดักจับ Error ที่เป็น HTML
                 const textResult = await response.text();
                 let data;
                 
@@ -260,14 +292,14 @@
                     data = JSON.parse(textResult);
                 } catch (e) {
                     console.error("Non-JSON response:", textResult);
-                    // ถ้าเจอ HTML (เช่น หน้า Login Google) แปลว่า Permission ผิด
                     if (textResult.includes("<!DOCTYPE html>") || textResult.includes("Google")) {
                         throw new Error("Permission Error: กรุณาตั้งค่า GAS Deploy เป็น 'Anyone'");
                     }
                     throw new Error("Invalid Response format");
                 }
 
-                Swal.close();
+                Swal.close(); // ปิด Loading
+                document.getElementById('checking-status').innerText = 'ตรวจสอบเสร็จสิ้น';
                 processUserStatus(data);
 
             } catch (error) {
@@ -275,14 +307,18 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'เชื่อมต่อไม่สำเร็จ',
-                    html: `เกิดข้อผิดพลาด: ${error.message}<br><br><small style="color:red">คำแนะนำ: ตรวจสอบการ Deploy GAS ว่าเลือก "Who has access" เป็น "Anyone" หรือไม่</small>`,
-                    confirmButtonText: 'ลองใหม่'
+                    html: `เกิดข้อผิดพลาด: ${error.message}<br><br><small style="color:red">ลองกดปุ่มด้านล่างเพื่อเชื่อมต่อใหม่</small>`,
+                    confirmButtonText: 'ปิด'
                 });
+                
+                // แสดงปุ่ม Retry เมื่อ Error
+                document.getElementById('checking-status').style.display = 'none';
+                document.getElementById('btn-retry').style.display = 'inline-block';
             }
         }
 
         function processUserStatus(data) {
-            // [ข้อ 1] Activate แล้ว
+            // [ข้อ 1] Activate แล้ว (มี UserID + มีชื่อ)
             if (data.status === 'found' && data.hasRegisterName) {
                 Swal.fire({
                     icon: 'info',
@@ -300,7 +336,7 @@
         async function showRegistrationForm(isNewUser) {
             const titleText = isNewUser ? 'ยินดีต้อนรับสมาชิกใหม่' : 'ข้อมูลยังไม่ครบถ้วน';
             
-            const { value: formValues } = await Swal.fire({
+            const { value: formValues, dismiss } = await Swal.fire({
                 title: titleText,
                 html: `
                     <p style="font-size:0.9rem; color:#666;">สวัสดีครับ คุณ ${liffProfile.displayName}<br>ต้องการให้ใส่ชื่อในบัตรว่าอะไรดีครับ</p>
@@ -323,6 +359,8 @@
             });
 
             let finalRegisterName = "";
+            
+            // กรณี: กด Confirm (formValues เป็น Array)
             if (formValues) {
                 const realName = formValues[0].trim();
                 const nickName = formValues[1].trim();
@@ -332,8 +370,18 @@
                      return;
                 }
                 finalRegisterName = `${realName} (${nickName})`;
+            } 
+            // กรณี: กด Cancel (dismiss === Swal.DismissReason.cancel)
+            else if (dismiss === Swal.DismissReason.cancel) {
+                // finalRegisterName เป็น "" (ค่าว่าง)
+                // ระบบจะบันทึกข้อมูลพื้นฐาน แต่ไม่บันทึกชื่อ
+            } else {
+                // กรณีปิด Popup ด้วยวิธีอื่น (เช่น คลิกข้างนอก) -> ไม่ทำอะไร หรือจะให้ถือว่า Cancel ก็ได้
+                // ในที่นี้ให้ถือว่า Cancel เพื่อให้ Flow ไปต่อได้
+                return; // หรือ saveData("") ถ้าต้องการ auto-save เมื่อปิด popup
             }
 
+            // บันทึกข้อมูล (ชื่อว่าง = Cancel, มีชื่อ = Confirm)
             saveData(finalRegisterName);
         }
 
@@ -359,7 +407,7 @@
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify(payload)
             })
-            .then(res => res.text()) // อ่านเป็น Text ก่อนเพื่อความชัวร์
+            .then(res => res.text())
             .then(text => {
                 try {
                     return JSON.parse(text);
