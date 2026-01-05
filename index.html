@@ -94,11 +94,12 @@
     </div>
 
     <script>
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyfDEX_Wz1vg66sWHwsYWZf0zgso_E_WKx-ute4VCs4HxvcBMX5uI/exec'; // คุณต้องนำ URL จากการ Deploy GAS มาใส่ที่นี่
+        // อัปเดตลิงก์ GAS เป็น URL ใหม่ที่คุณระบุ
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwEPR9FARhVxyQu3_spLb47kue08an21zNlrpOb5Xg7-hr_4Ag3U726Wl-ICUTWY_F3nQ/exec';
 
         async function init() {
             try {
-                // อัปเดต LIFF ID เป็นค่าใหม่ที่คุณต้องการ
+                // เริ่มต้น LIFF ด้วย ID ที่กำหนด
                 await liff.init({ liffId: "2008560135-06VyMziu" });
                 if (!liff.isLoggedIn()) {
                     liff.login();
