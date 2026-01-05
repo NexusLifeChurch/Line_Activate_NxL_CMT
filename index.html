@@ -29,7 +29,6 @@
     <div id="loading" class="text-[#4e342e] flex flex-col items-center">
         <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4e342e] mb-4"></div>
         <p id="loading-text">กำลังเตรียมบัตรของคุณ...</p>
-        <!-- ปุ่มฉุกเฉินหากโหลดนานเกินไป -->
         <button id="retry-btn" onclick="location.reload()" class="hidden mt-4 text-sm underline opacity-50">โหลดนานเกินไป? คลิกเพื่อลองใหม่</button>
     </div>
 
@@ -89,33 +88,26 @@
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbwEPR9FARhVxyQu3_spLb47kue08an21zNlrpOb5Xg7-hr_4Ag3U726Wl-ICUTWY_F3nQ/exec';
         const LIFF_ID = '2008560135-06VyMziu';
 
-        // แสดงปุ่ม Retry ถ้าโหลดเกิน 8 วินาที
         setTimeout(() => {
             document.getElementById('retry-btn').classList.remove('hidden');
         }, 8000);
 
         async function init() {
             try {
-                console.log('Starting LIFF...');
                 await liff.init({ liffId: LIFF_ID });
-                
                 if (!liff.isLoggedIn()) {
-                    console.log('Redirecting to Login...');
                     liff.login();
                     return;
                 }
-
                 const profile = await liff.getProfile();
-                console.log('Profile loaded:', profile.userId);
                 checkUserStatus(profile);
-
             } catch (err) {
                 console.error('LIFF Init Error:', err);
                 hideLoading();
                 Swal.fire({
                     icon: 'error',
                     title: 'LINE Connection Error',
-                    text: 'ไม่สามารถเริ่มต้น LINE ได้ (เช็ค LIFF ID และ Domain ใน Console)',
+                    text: 'ไม่สามารถเริ่มต้น LINE ได้ กรุณาลองใหม่อีกครั้ง',
                     confirmButtonColor: '#4e342e'
                 });
             }
@@ -123,25 +115,33 @@
 
         async function checkUserStatus(profile) {
             try {
-                console.log('Checking status from GAS...');
-                // ใช้ Timeout สำหรับการ Fetch
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 วินาทีตัด
-
-                const response = await fetch(`${GAS_URL}?userId=${profile.userId}`, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                
+                const response = await fetch(`${GAS_URL}?userId=${profile.userId}`);
                 const result = await response.json();
-                console.log('GAS Result:', result);
 
                 if (result.exists) {
-                    renderCard(result.data);
+                    // 1.2 มีข้อมูล UserID แล้ว
+                    if (result.data.lineRegisterName && result.data.lineRegisterName.trim() !== "") {
+                        // 1.2.1 มีชื่อลงทะเบียนแล้ว แสดงบัตร
+                        renderCard(result.data);
+                    } else {
+                        // 1.2.2 ยังไม่มีชื่อลงทะเบียน ให้แสดงฟอร์ม
+                        showRegisterForm(profile);
+                    }
                 } else {
+                    // 1.1 ยังไม่มีข้อมูลในระบบ ให้สร้างข้อมูลใหม่ก่อน
+                    showLoadingText('กำลังสร้างบัญชีผู้ใช้ใหม่...');
+                    await saveToGas({
+                        userId: profile.userId,
+                        displayName: profile.displayName,
+                        pictureUrl: profile.pictureUrl,
+                        statusMessage: profile.statusMessage || '',
+                        lineRegisterName: '' // เว้นชื่อไว้เพื่อรอขั้นตอนถัดไป
+                    });
+                    // จากนั้นทำตามขั้นตอน 1.2.2 (แสดงฟอร์ม)
                     showRegisterForm(profile);
                 }
             } catch (err) {
-                console.warn('Check Status Failed (Possible CORS or GAS error):', err);
-                // ถ้า API พัง ให้ถือว่ายังไม่ลงทะเบียนไว้ก่อน เพื่อให้ User กรอกข้อมูลได้
+                console.error('Check Status Failed:', err);
                 showRegisterForm(profile);
             }
         }
@@ -149,16 +149,18 @@
         function showRegisterForm(profile) {
             hideLoading();
             Swal.fire({
-                title: `<span class="text-[#4e342e]">ยินดีต้อนรับครับ!</span>`,
+                title: `<span class="text-[#4e342e] text-lg">ยินดีต้อนรับครับ!</span>`,
                 html: `
                     <div class="text-left text-sm text-gray-600 mb-4">
                         สวัสดีครับคุณ <b>${profile.displayName}</b> <br>
-                        รบกวนระบุชื่อจริงและชื่อเล่น เพื่อสร้างบัตรของคุณครับ
+                        สะดวกให้เราเรียกคุณว่าอะไรดี ที่ทำให้เรารู้จักกันมากขึ้นครับ?
                     </div>
-                    <input id="swal-realname" class="swal2-input px-4" placeholder="ชื่อจริง">
-                    <input id="swal-nickname" class="swal2-input px-4" placeholder="ชื่อเล่น">
+                    <div class="space-y-3">
+                        <input id="swal-realname" class="swal2-input w-full m-0 px-4" placeholder="ชื่อจริง">
+                        <input id="swal-nickname" class="swal2-input w-full m-0 px-4" placeholder="ชื่อเล่น">
+                    </div>
                 `,
-                confirmButtonText: 'ยืนยันสร้างบัตร',
+                confirmButtonText: 'สร้างบัตรสมาชิกดิจิทัล',
                 confirmButtonColor: '#4e342e',
                 allowOutsideClick: false,
                 preConfirm: () => {
@@ -177,10 +179,10 @@
                         displayName: profile.displayName,
                         pictureUrl: profile.pictureUrl,
                         statusMessage: profile.statusMessage || '',
-                        lineRegisterName: `${result.value.realName}-${result.value.nickName}`
+                        lineRegisterName: `${result.value.realName} (${result.value.nickName})`
                     };
 
-                    showLoadingText('กำลังบันทึกข้อมูล...');
+                    showLoadingText('กำลังยืนยันข้อมูลบัตรของคุณ...');
                     await saveToGas(payload);
                     renderCard({
                         ...payload,
@@ -193,14 +195,12 @@
 
         async function saveToGas(payload) {
             try {
-                // ส่งข้อมูลแบบ no-cors เพื่อเลี่ยงปัญหา Preflight ใน GAS
                 await fetch(GAS_URL, {
                     method: 'POST',
                     mode: 'no-cors',
                     body: JSON.stringify(payload)
                 });
-                // ให้รอเล็กน้อยเพื่อให้ GAS ทำงานเสร็จ
-                await new Promise(r => setTimeout(r, 1000));
+                await new Promise(r => setTimeout(r, 1500)); // รอให้ระบบบันทึกชัวร์ๆ
             } catch (err) {
                 console.error('Save error:', err);
             }
@@ -214,14 +214,20 @@
             document.getElementById('user-image').src = imgSrc || 'https://via.placeholder.com/150';
             document.getElementById('display-name').innerText = data.displayName || 'Member';
             
-            if (data.lineRegisterName && data.lineRegisterName.includes('-')) {
-                const names = data.lineRegisterName.split('-');
-                document.getElementById('real-name').innerText = names[0];
-                document.getElementById('nick-name').innerText = names[1];
+            // ปรับการดึงข้อมูลเพื่อแสดงผลในหน้าบัตร
+            let rName = "--", nName = "--";
+            if (data.lineRegisterName && data.lineRegisterName.includes('(')) {
+                // รูปแบบ: ชื่อจริง (ชื่อเล่น)
+                const parts = data.lineRegisterName.split('(');
+                rName = parts[0].trim();
+                nName = parts[1].replace(')', '').trim();
             } else {
-                document.getElementById('real-name').innerText = data.realName || '--';
-                document.getElementById('nick-name').innerText = data.nickName || '--';
+                rName = data.realName || "--";
+                nName = data.nickName || "--";
             }
+
+            document.getElementById('real-name').innerText = rName;
+            document.getElementById('nick-name').innerText = nName;
             
             const shortId = data.userId ? data.userId.substring(1, 9) : 'XXXX';
             document.getElementById('user-id-short').innerText = `ID: ${shortId}`;
