@@ -179,7 +179,7 @@
     <script>
         // --- Configuration ---
         const LIFF_ID = '2008560135-06VyMziu';
-        // ใช้ URL GAS ที่คุณให้มา (ถ้า Deploy ใหม่ให้เปลี่ยน URL ตรงนี้)
+        // URL GAS ของคุณ (ตรวจสอบว่า Deploy เป็น 'Anyone' แล้ว)
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwEPR9FARhVxyQu3_spLb47kue08an21zNlrpOb5Xg7-hr_4Ag3U726Wl-ICUTWY_F3nQ/exec';
 
         let liffProfile = {};
@@ -196,15 +196,15 @@
                 liffProfile = await liff.getProfile();
                 renderProfile(liffProfile);
                 
-                // ตรวจสอบสถานะ User ทันทีที่เข้า
-                await checkUserStatus(liffProfile.userId);
+                // ลอง ping server เบาๆ แบบไม่รอผล (เพื่อ wake up script)
+                fetch(GAS_API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'ping' }) });
 
             } catch (error) {
                 console.error(error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'เกิดข้อผิดพลาด',
-                    text: 'ไม่สามารถเชื่อมต่อกับ LINE ได้: ' + error.message
+                    title: 'LIFF Error',
+                    text: 'เชื่อมต่อ LINE ไม่สำเร็จ: ' + error.message
                 });
             }
         }
@@ -218,58 +218,8 @@
             document.getElementById('user-status').innerText = profile.statusMessage || '';
         }
 
-        // --- Logic: Check Status ---
-        async function checkUserStatus(userId) {
-            showLoading(true);
-            try {
-                const response = await fetch(GAS_API_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // สำคัญ: ใช้ no-cors แต่ GAS ต้อง handle return ดีๆ หรือใช้ jsonp (ในที่นี้เราใช้ redirect method ผ่าน fetch ปกติไม่ได้ data กลับมาใน no-cors, เราเลยใช้ text/plain trick หรือเปลี่ยน logic นิดหน่อย)
-                    // หมายเหตุ: การใช้ fetch('POST') ไป GAS โดยตรงแบบรับค่ากลับ (await response.json()) จะติด CORS ถ้าไม่ได้ setup header ใน GAS ให้ดี
-                    // วิธีแก้ที่ดีที่สุดสำหรับ Web App ง่ายๆ คือใช้ application/x-www-form-urlencoded และรับค่าผ่าน redirect
-                    // แต่เพื่อความง่ายและชัวร์ เราจะใช้ท่ามาตรฐาน: ส่ง stringify body
-                    body: JSON.stringify({ action: 'check_user', userId: userId })
-                });
-
-                // *Hack Fix for GAS CORS*: 
-                // เนื่องจาก GAS Web App doPost มักมีปัญหา CORS กับ fetch โดยตรงถ้าไม่ได้ทำ proxy
-                // เราจะใช้ท่า "Fire and check response" แบบ Manual หรือใช้ redirectUrl
-                // แต่เพื่อให้ Code นี้ทำงานได้จริงแบบ Copy Paste บน Client-side เพียวๆ 
-                // เราจะใช้เทคนิค fetch แบบปกติ (หวังว่า GAS code ผม set return header ถูกต้อง) 
-                // **ถ้ายังติด CORS**: แนะนำให้ใช้ library "axios" หรือเปลี่ยนวิธีรับค่า 
-                
-                // เพื่อความ User Friendly ที่สุดใน demo นี้ ผมจะเขียนให้รองรับ response.text() 
-                // แต่เนื่องจาก CORS ใน Client-side เพียวๆ จะ Block การอ่าน response
-                // **Workaround**: เราจะไม่รอ check status แบบละเอียดในหน้าแรก 
-                // แต่จะให้ user กด Activate แล้วค่อยเช็คใน process นั้นเลยเพื่อลดความซับซ้อนของการ Loading หน้าแรก
-                
-                // ดังนั้น function นี้จะแค่ซ่อน Loading
-                showLoading(false);
-
-            } catch (e) {
-                console.log("Network check skipped due to CORS, will check on action.");
-                showLoading(false);
-            }
-        }
-
-        function showLoading(isLoading) {
-            const btn = document.querySelector('.btn-activate');
-            if(isLoading) {
-                btn.innerText = 'กำลังตรวจสอบ...';
-                btn.disabled = true;
-                btn.style.opacity = 0.7;
-            } else {
-                btn.innerText = 'Activate Digital Card';
-                btn.disabled = false;
-                btn.style.opacity = 1;
-            }
-        }
-
-        // --- Core Action: Start Activate ---
+        // --- Core Action: Start Activate (Updated with Better Debugging) ---
         async function startActivation() {
-            // 1. ถามข้อมูล User จาก Server ก่อน (Workaround CORS: ใช้ท่า fetch แบบมี return ยากถ้าไม่ setup server)
-            // เราจะใช้วิธีส่งข้อมูลไปเช็คแล้วรอผลลัพธ์ผ่าน text
-            
             Swal.fire({
                 title: 'กำลังเชื่อมต่อระบบสมาชิก...',
                 didOpen: () => {
@@ -278,25 +228,51 @@
                 allowOutsideClick: false
             });
 
-            // ยิง Request ไปเช็ค User
-            fetch(GAS_API_URL, {
-                redirect: "follow",
-                method: 'POST',
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ action: 'check_user', userId: liffProfile.userId })
-            })
-            .then(response => response.json())
-            .then(data => {
+            try {
+                // ยิง Request ไปเช็ค User
+                // ใช้ headers text/plain เพื่อหลบ CORS Preflight
+                const response = await fetch(GAS_API_URL, {
+                    redirect: "follow",
+                    method: 'POST',
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: 'check_user', userId: liffProfile.userId })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server returned status: ${response.status}`);
+                }
+
+                // อ่านค่า Text ก่อน แล้วค่อย Parse JSON เพื่อดักจับ Error ที่เป็น HTML
+                const textResult = await response.text();
+                let data;
+                
+                try {
+                    data = JSON.parse(textResult);
+                } catch (e) {
+                    console.error("Non-JSON response:", textResult);
+                    // ถ้าเจอ HTML (เช่น หน้า Login Google) แปลว่า Permission ผิด
+                    if (textResult.includes("<!DOCTYPE html>") || textResult.includes("Google")) {
+                        throw new Error("Permission Error: กรุณาตั้งค่า GAS Deploy เป็น 'Anyone'");
+                    }
+                    throw new Error("Invalid Response format");
+                }
+
                 Swal.close();
                 processUserStatus(data);
-            })
-            .catch(error => {
-                Swal.fire('Error', 'ไม่สามารถเชื่อมต่อ Server ได้', 'error');
-            });
+
+            } catch (error) {
+                console.error("Activation Error:", error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เชื่อมต่อไม่สำเร็จ',
+                    html: `เกิดข้อผิดพลาด: ${error.message}<br><br><small style="color:red">คำแนะนำ: ตรวจสอบการ Deploy GAS ว่าเลือก "Who has access" เป็น "Anyone" หรือไม่</small>`,
+                    confirmButtonText: 'ลองใหม่'
+                });
+            }
         }
 
         function processUserStatus(data) {
-            // Case 1: มีข้อมูลครบแล้ว (Registered & Has Name)
+            // [ข้อ 1] Activate แล้ว
             if (data.status === 'found' && data.hasRegisterName) {
                 Swal.fire({
                     icon: 'info',
@@ -305,7 +281,7 @@
                     confirmButtonText: 'รับทราบ'
                 });
             }
-            // Case 2: ยังไม่มีข้อมูล หรือ มี User แต่ยังไม่มีชื่อ (Create / Update Name)
+            // [ข้อ 2 & 3] ยังไม่มีข้อมูล หรือ มี User แต่ยังไม่มีชื่อ
             else {
                 showRegistrationForm(data.status === 'not_found');
             }
@@ -336,10 +312,6 @@
                 }
             });
 
-            // Logic:
-            // ถ้ากด Confirm (formValues มีค่า) -> รวมชื่อ -> Save All
-            // ถ้ากด Cancel (formValues undefined) -> ชื่อว่าง -> Save All (Status, Pic, Date)
-            
             let finalRegisterName = "";
             if (formValues) {
                 const realName = formValues[0].trim();
@@ -349,23 +321,9 @@
                      Swal.fire('แจ้งเตือน', 'กรุณาระบุชื่อจริง', 'warning').then(() => showRegistrationForm(isNewUser));
                      return;
                 }
-                
                 finalRegisterName = `${realName} (${nickName})`;
-            } else {
-                // User กด Cancel / Dismiss
-                // ให้บันทึกข้อมูลพื้นฐาน แต่ไม่บันทึกชื่อ (ตาม Requirement)
-                // ตรวจสอบว่าเป็น Dismiss แบบไหน ถ้ากดปุ่ม Cancel ให้ดำเนินการต่อ
-                // แต่ถ้าคลิกข้างนอก (backdrop) อาจจะไม่ทำอะไร -> ในที่นี้สมมติว่า Cancel คือปุ่ม Cancel
             }
 
-            // ถ้าเป็น Cancel จากปุ่ม (DismissReason.cancel) หรือ Confirm
-            // เราจะทำการบันทึกข้อมูล
-            // เนื่องจาก Swal return value เป็น undefined ถ้า dismiss
-            // เราต้องเช็ค dismiss reason ถ้ายากไป เราใช้ logic นี้:
-            
-            // ถ้า formValues (Confirm) -> save with name
-            // ถ้า !formValues -> save without name
-            
             saveData(finalRegisterName);
         }
 
@@ -391,7 +349,14 @@
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify(payload)
             })
-            .then(response => response.json())
+            .then(res => res.text()) // อ่านเป็น Text ก่อนเพื่อความชัวร์
+            .then(text => {
+                try {
+                    return JSON.parse(text);
+                } catch(e) {
+                    throw new Error("Server response is not JSON");
+                }
+            })
             .then(res => {
                 if(res.status === 'success') {
                     let msg = 'บันทึกข้อมูลบัตรสมาชิกเรียบร้อยแล้ว';
@@ -405,20 +370,18 @@
                         text: msg,
                         confirmButtonText: 'ตกลง'
                     }).then(() => {
-                        liff.closeWindow(); // ปิดหน้าต่างเมื่อเสร็จ
+                        liff.closeWindow();
                     });
                 } else {
-                    Swal.fire('Error', 'เกิดข้อผิดพลาดในการบันทึก: ' + res.message, 'error');
+                    throw new Error(res.message);
                 }
             })
             .catch(err => {
-                Swal.fire('Error', 'Network Error', 'error');
+                Swal.fire('Error', 'เกิดข้อผิดพลาด: ' + err.message, 'error');
             });
         }
 
-        // Start App
         main();
-
     </script>
 </body>
 </html>
