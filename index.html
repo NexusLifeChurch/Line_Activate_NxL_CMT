@@ -10,20 +10,21 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { font-family: 'Prompt', sans-serif; }
-        .coffee-gradient {
-            background: linear-gradient(135deg, #4e342e 0%, #8d6e63 50%, #d7ccc8 100%);
+        /* ปรับสีให้เข้มขึ้นเพื่อให้อ่านง่าย */
+        .coffee-gradient-dark {
+            background: linear-gradient(135deg, #3e2723 0%, #5d4037 60%, #8d6e63 100%);
         }
-        .card-shadow { box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+        .card-shadow { box-shadow: 0 15px 35px rgba(0,0,0,0.4); }
         .glass-effect {
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
         }
         .animate-fade-in { animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-[#f5f5f0] min-h-screen flex items-center justify-center p-4">
+<body class="bg-[#f5f5f0] min-h-screen flex flex-col items-center justify-center p-4">
 
     <!-- Loading State -->
     <div id="loading" class="text-[#4e342e] flex flex-col items-center">
@@ -32,56 +33,66 @@
         <button id="retry-btn" onclick="location.reload()" class="hidden mt-4 text-sm underline opacity-50">โหลดนานเกินไป? คลิกเพื่อลองใหม่</button>
     </div>
 
-    <!-- บัตรสมาชิก -->
-    <div id="card-container" class="hidden w-full max-w-md animate-fade-in">
-        <div class="coffee-gradient rounded-3xl p-8 card-shadow text-white relative overflow-hidden">
-            <div class="absolute -right-10 -bottom-10 opacity-10">
-                <svg width="200" height="200" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="white"/></svg>
+    <!-- บัตรสมาชิก (แนวนอน) -->
+    <div id="card-container" class="hidden w-full max-w-[500px] animate-fade-in">
+        <!-- Card Body: Aspect Ratio for Landscape Credit Card look -->
+        <div class="coffee-gradient-dark rounded-2xl p-6 card-shadow text-white relative overflow-hidden flex flex-col justify-between h-[280px]">
+            
+            <!-- Background Decorative Elements -->
+            <div class="absolute -right-16 -top-16 opacity-5 pointer-events-none">
+                <svg width="300" height="300" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="white"/></svg>
+            </div>
+            
+            <!-- Header -->
+            <div class="flex justify-between items-start z-10">
+                <h1 class="text-xl font-bold tracking-wider uppercase text-amber-100/90">NexusLife Digital Card</h1>
+                <!-- Removed NX Circle -->
             </div>
 
-            <div class="flex justify-between items-start mb-12">
-                <div>
-                    <h1 class="text-2xl font-bold tracking-wider">NXLife</h1>
-                    <p class="text-xs opacity-75 uppercase">Community Citizen</p>
-                </div>
-                <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-inner">
-                    <span class="text-[#4e342e] font-bold text-xl">NX</span>
-                </div>
-            </div>
-
-            <div class="flex flex-col items-center mb-8">
-                <div class="w-24 h-24 rounded-full border-4 border-white/50 overflow-hidden mb-4 shadow-lg bg-gray-200">
+            <!-- Content: Row Layout -->
+            <div class="flex items-center gap-6 z-10 mt-2">
+                <!-- Profile Image -->
+                <div class="w-24 h-24 flex-shrink-0 rounded-full border-4 border-white/20 shadow-lg overflow-hidden bg-gray-300">
                     <img id="user-image" src="" alt="Profile" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150'">
                 </div>
-                <h2 id="display-name" class="text-xl font-semibold italic">Line Name</h2>
-            </div>
 
-            <div class="glass-effect rounded-2xl p-6 space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <p class="text-[10px] uppercase opacity-60">Real Name</p>
-                        <p id="real-name" class="text-sm font-medium border-b border-white/20 pb-1 truncate">--</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] uppercase opacity-60">Nickname</p>
-                        <p id="nick-name" class="text-sm font-medium border-b border-white/20 pb-1 truncate">--</p>
+                <!-- Text Info -->
+                <div class="flex-grow space-y-2">
+                    <h2 id="display-name" class="text-lg font-semibold italic opacity-90 truncate max-w-[200px]">Line Name</h2>
+                    
+                    <div class="glass-effect rounded-lg p-3 pr-6">
+                        <div class="mb-1">
+                            <span class="text-[10px] uppercase text-amber-200/80 block">Real Name</span>
+                            <span id="real-name" class="text-sm font-medium tracking-wide">--</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] uppercase text-amber-200/80 block">Nickname</span>
+                            <span id="nick-name" class="text-sm font-medium tracking-wide">--</span>
+                        </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-between items-end z-10 mt-auto">
                 <div>
-                    <p class="text-[10px] uppercase opacity-60">Status</p>
-                    <p class="text-sm font-medium text-amber-200">ACTIVE MEMBER</p>
+                     <p class="text-[10px] uppercase tracking-widest text-emerald-300/90 font-semibold mb-0.5">Active Member</p>
+                    <div class="text-[10px] opacity-60 font-light">
+                        Nexus Life Community
+                    </div>
                 </div>
-            </div>
-
-            <div class="mt-10 flex justify-between items-end">
-                <div class="text-[10px] opacity-50 italic">Designed for NxLife Family</div>
-                <div class="text-xs font-mono opacity-80" id="user-id-short">ID: XXXX</div>
+                <!-- Removed ID Display -->
             </div>
         </div>
         
-        <button onclick="liff.closeWindow()" class="w-full mt-6 py-3 bg-[#4e342e] text-white rounded-xl font-semibold shadow-lg hover:bg-[#3e2723] transition-all active:scale-95">
+        <button onclick="liff.closeWindow()" class="w-full mt-8 py-3 bg-[#3e2723] text-white rounded-xl font-semibold shadow-lg hover:bg-[#2d1b18] transition-all active:scale-95">
             กลับหน้าแชท
         </button>
+    </div>
+
+    <!-- Version Indicator -->
+    <div class="fixed bottom-2 right-2 text-[10px] text-gray-400 select-none">
+        v1.1.0 (Horizontal)
     </div>
 
     <script>
@@ -108,7 +119,7 @@
                     icon: 'error',
                     title: 'LINE Connection Error',
                     text: 'ไม่สามารถเริ่มต้น LINE ได้ กรุณาลองใหม่อีกครั้ง',
-                    confirmButtonColor: '#4e342e'
+                    confirmButtonColor: '#3e2723'
                 });
             }
         }
@@ -119,25 +130,20 @@
                 const result = await response.json();
 
                 if (result.exists) {
-                    // 1.2 มีข้อมูล UserID แล้ว
                     if (result.data.lineRegisterName && result.data.lineRegisterName.trim() !== "") {
-                        // 1.2.1 มีชื่อลงทะเบียนแล้ว แสดงบัตร
                         renderCard(result.data);
                     } else {
-                        // 1.2.2 ยังไม่มีชื่อลงทะเบียน ให้แสดงฟอร์ม
                         showRegisterForm(profile);
                     }
                 } else {
-                    // 1.1 ยังไม่มีข้อมูลในระบบ ให้สร้างข้อมูลใหม่ก่อน
                     showLoadingText('กำลังสร้างบัญชีผู้ใช้ใหม่...');
                     await saveToGas({
                         userId: profile.userId,
                         displayName: profile.displayName,
                         pictureUrl: profile.pictureUrl,
                         statusMessage: profile.statusMessage || '',
-                        lineRegisterName: '' // เว้นชื่อไว้เพื่อรอขั้นตอนถัดไป
+                        lineRegisterName: ''
                     });
-                    // จากนั้นทำตามขั้นตอน 1.2.2 (แสดงฟอร์ม)
                     showRegisterForm(profile);
                 }
             } catch (err) {
@@ -149,25 +155,31 @@
         function showRegisterForm(profile) {
             hideLoading();
             Swal.fire({
-                title: `<span class="text-[#4e342e] text-lg">ยินดีต้อนรับครับ!</span>`,
+                // 2. ปรับข้อความหัวเรื่อง
+                title: `<span class="text-[#3e2723] text-lg font-semibold">มาสร้างบัตรสมาชิก Nexus Life Digital Card ของคุณกัน</span>`,
                 html: `
-                    <div class="text-left text-sm text-gray-600 mb-4">
+                    <div class="text-left text-sm text-gray-600 mb-6 px-2">
                         สวัสดีครับคุณ <b>${profile.displayName}</b> <br>
-                        สะดวกให้เราเรียกคุณว่าอะไรดี ที่ทำให้เรารู้จักกันมากขึ้นครับ?
+                        ต้องการให้ใส่ชื่อในบัตรว่าอะไรดีครับ?
                     </div>
-                    <div class="space-y-3">
-                        <input id="swal-realname" class="swal2-input w-full m-0 px-4" placeholder="ชื่อจริง">
-                        <input id="swal-nickname" class="swal2-input w-full m-0 px-4" placeholder="ชื่อเล่น">
+                    <div class="space-y-4 px-2">
+                        <input id="swal-realname" class="swal2-input w-full m-0 px-4 text-base border-gray-300 focus:border-[#3e2723] focus:shadow-[0_0_0_2px_rgba(62,39,35,0.2)]" placeholder="ชื่อจริง">
+                        <input id="swal-nickname" class="swal2-input w-full m-0 px-4 text-base border-gray-300 focus:border-[#3e2723] focus:shadow-[0_0_0_2px_rgba(62,39,35,0.2)]" placeholder="ชื่อเล่น">
                     </div>
                 `,
                 confirmButtonText: 'สร้างบัตรสมาชิกดิจิทัล',
-                confirmButtonColor: '#4e342e',
+                confirmButtonColor: '#3e2723',
                 allowOutsideClick: false,
+                customClass: {
+                    popup: 'rounded-2xl',
+                    confirmButton: 'rounded-xl px-6 py-2'
+                },
                 preConfirm: () => {
                     const realName = document.getElementById('swal-realname').value.trim();
                     const nickName = document.getElementById('swal-nickname').value.trim();
                     if (!realName || !nickName) {
-                        Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบถ้วนนะครับ');
+                        // 2. ปรับข้อความเตือนพร้อมอิโมจิ
+                        Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบถ้วนนะครับ 🙂');
                         return false;
                     }
                     return { realName, nickName };
@@ -200,7 +212,7 @@
                     mode: 'no-cors',
                     body: JSON.stringify(payload)
                 });
-                await new Promise(r => setTimeout(r, 1500)); // รอให้ระบบบันทึกชัวร์ๆ
+                await new Promise(r => setTimeout(r, 1500));
             } catch (err) {
                 console.error('Save error:', err);
             }
@@ -214,10 +226,8 @@
             document.getElementById('user-image').src = imgSrc || 'https://via.placeholder.com/150';
             document.getElementById('display-name').innerText = data.displayName || 'Member';
             
-            // ปรับการดึงข้อมูลเพื่อแสดงผลในหน้าบัตร
             let rName = "--", nName = "--";
             if (data.lineRegisterName && data.lineRegisterName.includes('(')) {
-                // รูปแบบ: ชื่อจริง (ชื่อเล่น)
                 const parts = data.lineRegisterName.split('(');
                 rName = parts[0].trim();
                 nName = parts[1].replace(')', '').trim();
@@ -228,9 +238,6 @@
 
             document.getElementById('real-name').innerText = rName;
             document.getElementById('nick-name').innerText = nName;
-            
-            const shortId = data.userId ? data.userId.substring(1, 9) : 'XXXX';
-            document.getElementById('user-id-short').innerText = `ID: ${shortId}`;
         }
 
         function hideLoading() {
