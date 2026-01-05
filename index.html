@@ -13,62 +13,59 @@
         .coffee-gradient {
             background: linear-gradient(135deg, #4e342e 0%, #8d6e63 50%, #d7ccc8 100%);
         }
-        .card-shadow {
-            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-        }
+        .card-shadow { box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
         .glass-effect {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body class="bg-[#f5f5f0] min-h-screen flex items-center justify-center p-4">
 
+    <!-- Loading State -->
     <div id="loading" class="text-[#4e342e] flex flex-col items-center">
         <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4e342e] mb-4"></div>
-        <p>กำลังเตรียมบัตรของคุณ...</p>
+        <p id="loading-text">กำลังเตรียมบัตรของคุณ...</p>
+        <!-- ปุ่มฉุกเฉินหากโหลดนานเกินไป -->
+        <button id="retry-btn" onclick="location.reload()" class="hidden mt-4 text-sm underline opacity-50">โหลดนานเกินไป? คลิกเพื่อลองใหม่</button>
     </div>
 
     <!-- บัตรสมาชิก -->
-    <div id="card-container" class="hidden w-full max-w-md">
+    <div id="card-container" class="hidden w-full max-w-md animate-fade-in">
         <div class="coffee-gradient rounded-3xl p-8 card-shadow text-white relative overflow-hidden">
-            <!-- Background Decorative Logo -->
             <div class="absolute -right-10 -bottom-10 opacity-10">
-                <svg width="200" height="200" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="40" fill="white"/>
-                </svg>
+                <svg width="200" height="200" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="white"/></svg>
             </div>
 
-            <!-- Header -->
             <div class="flex justify-between items-start mb-12">
                 <div>
                     <h1 class="text-2xl font-bold tracking-wider">NXLife</h1>
-                    <p class="text-xs opacity-75">COMMUNITY CITIZEN</p>
+                    <p class="text-xs opacity-75 uppercase">Community Citizen</p>
                 </div>
-                <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+                <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-inner">
                     <span class="text-[#4e342e] font-bold text-xl">NX</span>
                 </div>
             </div>
 
-            <!-- Profile Section -->
             <div class="flex flex-col items-center mb-8">
-                <div class="w-24 h-24 rounded-full border-4 border-white/50 overflow-hidden mb-4 shadow-lg">
-                    <img id="user-image" src="" alt="Profile" class="w-full h-full object-cover">
+                <div class="w-24 h-24 rounded-full border-4 border-white/50 overflow-hidden mb-4 shadow-lg bg-gray-200">
+                    <img id="user-image" src="" alt="Profile" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150'">
                 </div>
                 <h2 id="display-name" class="text-xl font-semibold italic">Line Name</h2>
             </div>
 
-            <!-- Data Fields -->
             <div class="glass-effect rounded-2xl p-6 space-y-4">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <p class="text-[10px] uppercase opacity-60">Real Name</p>
-                        <p id="real-name" class="text-sm font-medium border-b border-white/20 pb-1">--</p>
+                        <p id="real-name" class="text-sm font-medium border-b border-white/20 pb-1 truncate">--</p>
                     </div>
                     <div>
                         <p class="text-[10px] uppercase opacity-60">Nickname</p>
-                        <p id="nick-name" class="text-sm font-medium border-b border-white/20 pb-1">--</p>
+                        <p id="nick-name" class="text-sm font-medium border-b border-white/20 pb-1 truncate">--</p>
                     </div>
                 </div>
                 <div>
@@ -77,79 +74,102 @@
                 </div>
             </div>
 
-            <!-- Footer -->
             <div class="mt-10 flex justify-between items-end">
-                <div class="text-[10px] opacity-50 italic">
-                    Designed for NxLife Family
-                </div>
-                <div class="text-xs font-mono opacity-80" id="user-id-short">
-                    ID: XXXX
-                </div>
+                <div class="text-[10px] opacity-50 italic">Designed for NxLife Family</div>
+                <div class="text-xs font-mono opacity-80" id="user-id-short">ID: XXXX</div>
             </div>
         </div>
         
-        <button onclick="liff.closeWindow()" class="w-full mt-6 py-3 bg-[#4e342e] text-white rounded-xl font-semibold shadow-lg hover:bg-[#3e2723] transition">
+        <button onclick="liff.closeWindow()" class="w-full mt-6 py-3 bg-[#4e342e] text-white rounded-xl font-semibold shadow-lg hover:bg-[#3e2723] transition-all active:scale-95">
             กลับหน้าแชท
         </button>
     </div>
 
     <script>
-        // อัปเดตลิงก์ GAS เป็น URL ใหม่ที่คุณระบุ
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbwEPR9FARhVxyQu3_spLb47kue08an21zNlrpOb5Xg7-hr_4Ag3U726Wl-ICUTWY_F3nQ/exec';
+        const LIFF_ID = '2008560135-06VyMziu';
+
+        // แสดงปุ่ม Retry ถ้าโหลดเกิน 8 วินาที
+        setTimeout(() => {
+            document.getElementById('retry-btn').classList.remove('hidden');
+        }, 8000);
 
         async function init() {
             try {
-                // เริ่มต้น LIFF ด้วย ID ที่กำหนด
-                await liff.init({ liffId: "2008560135-06VyMziu" });
+                console.log('Starting LIFF...');
+                await liff.init({ liffId: LIFF_ID });
+                
                 if (!liff.isLoggedIn()) {
+                    console.log('Redirecting to Login...');
                     liff.login();
                     return;
                 }
 
                 const profile = await liff.getProfile();
+                console.log('Profile loaded:', profile.userId);
                 checkUserStatus(profile);
 
             } catch (err) {
                 console.error('LIFF Init Error:', err);
-                Swal.fire('Error', 'ไม่สามารถเชื่อมต่อ LINE ได้', 'error');
+                hideLoading();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'LINE Connection Error',
+                    text: 'ไม่สามารถเริ่มต้น LINE ได้ (เช็ค LIFF ID และ Domain ใน Console)',
+                    confirmButtonColor: '#4e342e'
+                });
             }
         }
 
         async function checkUserStatus(profile) {
-            const response = await fetch(`${GAS_URL}?userId=${profile.userId}`);
-            const result = await response.json();
+            try {
+                console.log('Checking status from GAS...');
+                // ใช้ Timeout สำหรับการ Fetch
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 วินาทีตัด
 
-            if (result.exists) {
-                renderCard(result.data);
-            } else {
+                const response = await fetch(`${GAS_URL}?userId=${profile.userId}`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
+                const result = await response.json();
+                console.log('GAS Result:', result);
+
+                if (result.exists) {
+                    renderCard(result.data);
+                } else {
+                    showRegisterForm(profile);
+                }
+            } catch (err) {
+                console.warn('Check Status Failed (Possible CORS or GAS error):', err);
+                // ถ้า API พัง ให้ถือว่ายังไม่ลงทะเบียนไว้ก่อน เพื่อให้ User กรอกข้อมูลได้
                 showRegisterForm(profile);
             }
         }
 
         function showRegisterForm(profile) {
-            document.getElementById('loading').classList.add('hidden');
-            
+            hideLoading();
             Swal.fire({
                 title: `<span class="text-[#4e342e]">ยินดีต้อนรับครับ!</span>`,
                 html: `
                     <div class="text-left text-sm text-gray-600 mb-4">
                         สวัสดีครับคุณ <b>${profile.displayName}</b> <br>
-                        สะดวกให้เราเรียกคุณว่าอะไรดีครับ?
+                        รบกวนระบุชื่อจริงและชื่อเล่น เพื่อสร้างบัตรของคุณครับ
                     </div>
-                    <input id="swal-realname" class="swal2-input" placeholder="ชื่อจริง">
-                    <input id="swal-nickname" class="swal2-input" placeholder="ชื่อเล่น">
+                    <input id="swal-realname" class="swal2-input px-4" placeholder="ชื่อจริง">
+                    <input id="swal-nickname" class="swal2-input px-4" placeholder="ชื่อเล่น">
                 `,
-                confirmButtonText: 'ยืนยันและสร้างบัตร',
+                confirmButtonText: 'ยืนยันสร้างบัตร',
                 confirmButtonColor: '#4e342e',
+                allowOutsideClick: false,
                 preConfirm: () => {
-                    const realName = document.getElementById('swal-realname').value;
-                    const nickName = document.getElementById('swal-nickname').value;
+                    const realName = document.getElementById('swal-realname').value.trim();
+                    const nickName = document.getElementById('swal-nickname').value.trim();
                     if (!realName || !nickName) {
                         Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบถ้วนนะครับ');
+                        return false;
                     }
                     return { realName, nickName };
-                },
-                allowOutsideClick: false
+                }
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     const payload = {
@@ -160,8 +180,8 @@
                         lineRegisterName: `${result.value.realName}-${result.value.nickName}`
                     };
 
+                    showLoadingText('กำลังบันทึกข้อมูล...');
                     await saveToGas(payload);
-                    // ปรับการแสดงผลบัตรให้แสดงชื่อที่กรอกใหม่
                     renderCard({
                         ...payload,
                         realName: result.value.realName,
@@ -172,20 +192,28 @@
         }
 
         async function saveToGas(payload) {
-            await fetch(GAS_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            });
+            try {
+                // ส่งข้อมูลแบบ no-cors เพื่อเลี่ยงปัญหา Preflight ใน GAS
+                await fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify(payload)
+                });
+                // ให้รอเล็กน้อยเพื่อให้ GAS ทำงานเสร็จ
+                await new Promise(r => setTimeout(r, 1000));
+            } catch (err) {
+                console.error('Save error:', err);
+            }
         }
 
         function renderCard(data) {
-            document.getElementById('loading').classList.add('hidden');
+            hideLoading();
             document.getElementById('card-container').classList.remove('hidden');
             
-            document.getElementById('user-image').src = data.pictureUrl || data.profilePicture || 'https://via.placeholder.com/150';
-            document.getElementById('display-name').innerText = data.displayName;
+            const imgSrc = data.pictureUrl || data.profilePicture || data.image;
+            document.getElementById('user-image').src = imgSrc || 'https://via.placeholder.com/150';
+            document.getElementById('display-name').innerText = data.displayName || 'Member';
             
-            // แยกชื่อจริงและชื่อเล่นจากข้อมูลที่เก็บ (กรณีดึงจาก DB) หรือแสดงตรงๆ
             if (data.lineRegisterName && data.lineRegisterName.includes('-')) {
                 const names = data.lineRegisterName.split('-');
                 document.getElementById('real-name').innerText = names[0];
@@ -195,7 +223,18 @@
                 document.getElementById('nick-name').innerText = data.nickName || '--';
             }
             
-            document.getElementById('user-id-short').innerText = `ID: ${data.userId.substring(1, 8)}`;
+            const shortId = data.userId ? data.userId.substring(1, 9) : 'XXXX';
+            document.getElementById('user-id-short').innerText = `ID: ${shortId}`;
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.add('hidden');
+        }
+
+        function showLoadingText(text) {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('loading-text').innerText = text;
+            document.getElementById('card-container').classList.add('hidden');
         }
 
         init();
