@@ -1,372 +1,138 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nexus Life Activation</title>
+/**
+ * Configuration
+ * ตั้งค่า Sheet ID และชื่อ Sheet ให้ถูกต้อง
+ */
+const SS_ID = '1vg66sWHwsYWZf0zgso_E_WKx-ute4VCs4HxvcBMX5uI'; // SSID จาก Prompt
+const SHEET_NAME = 'LineUsers';
+
+/**
+ * doPost(e)
+ * รับค่า JSON จาก Frontend เพื่อแก้ปัญหา CORS และ Iframe
+ */
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000); // ป้องกันการบันทึกชนกัน
+
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+    const ss = SpreadsheetApp.openById(SS_ID);
+    const sheet = ss.getSheetByName(SHEET_NAME);
     
-    <!-- LIFF SDK -->
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    if (!sheet) throw new Error("Sheet '" + SHEET_NAME + "' not found.");
+
+    if (action === 'CHECK_USER') {
+      return checkUser(sheet, data);
+    } else if (action === 'REGISTER') {
+      return registerUser(sheet, data);
+    } else {
+      return responseJSON({ status: 'error', message: 'Unknown action' });
+    }
+
+  } catch (err) {
+    return responseJSON({ status: 'error', message: err.toString() });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * checkUser
+ * ตรวจสอบ User และ อ่านค่า MemberID มาแสดงผล (Read Only)
+ */
+function checkUser(sheet, data) {
+  const userId = data.userId;
+  const userRowIndex = findRowIndexByUserId(sheet, userId);
+
+  let isUserExist = false;
+  let hasRegisterName = false;
+  let userData = {};
+
+  if (userRowIndex > 0) {
+    isUserExist = true;
+    // ดึงข้อมูลมา 9 คอลัมน์เพื่ออ่าน MemberID (Col 9)
+    const rowValues = sheet.getRange(userRowIndex, 1, 1, 9).getValues()[0];
+    const registerName = rowValues[6]; 
+    const memberId = rowValues[8]; // อ่านค่าจริงจาก Sheet (Read Only)
+
+    if (registerName && registerName.toString().trim() !== "") {
+      hasRegisterName = true;
+    }
+
+    userData = {
+      registeredDate: rowValues[0],
+      lineRegisterName: registerName,
+      memberId: memberId // ส่งค่าไปแสดงผลหน้าบ้าน
+    };
+  }
+
+  return responseJSON({
+    status: 'success',
+    isUserExist: isUserExist,
+    hasRegisterName: hasRegisterName,
+    userData: userData
+  });
+}
+
+/**
+ * registerUser
+ * บันทึกข้อมูล (Write) โดยห้ามแตะต้อง MemberID (Col 9)
+ */
+function registerUser(sheet, data) {
+  const userId = data.userId;
+  const userRowIndex = findRowIndexByUserId(sheet, userId);
+  const timestamp = new Date();
+  const payload = data.payload; 
+  const registerName = payload.lineRegisterName || ""; 
+  const imageFormula = `=IMAGE(INDIRECT("R[0]C[-2]", FALSE))`;
+
+  if (userRowIndex > 0) {
+    // --- Update Existing User ---
+    sheet.getRange(userRowIndex, 3).setValue(payload.displayName);
+    sheet.getRange(userRowIndex, 4).setValue(payload.pictureUrl);
+    sheet.getRange(userRowIndex, 5).setValue(payload.statusMessage);
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    if (payload.updateRegisterName) {
+      sheet.getRange(userRowIndex, 7).setValue(registerName);
+    }
+
+    // อ่านค่า MemberID เดิมส่งกลับไปแสดงผล (ห้ามแก้ไขค่าใน Sheet)
+    const currentMemberId = sheet.getRange(userRowIndex, 9).getValue();
+    return responseJSON({ status: 'success', message: 'Updated', memberId: currentMemberId });
+
+  } else {
+    // --- Insert New User ---
+    // สร้าง Array ข้อมูลแค่ 8 ช่อง (จบที่ Reserved)
+    // ตัด Col 9 (MemberID) ออกไปเลย เพื่อให้มั่นใจว่าจะไม่มีการเขียนข้อมูลลงไป
     
-    <!-- Google Fonts: Prompt -->
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    const newRowData = [
+      timestamp,                  // 1. RegisteredDate
+      userId,                     // 2. LineUserID
+      payload.displayName,        // 3. DisplayName
+      payload.pictureUrl,         // 4. ProfilePicture
+      payload.statusMessage,      // 5. StatusMessage
+      imageFormula,               // 6. Image Formula
+      registerName,               // 7. LineRegisterName
+      ""                          // 8. Reserved
+      // 9. MemberID -> ตัดออก ไม่ส่งค่าใดๆ (ปล่อยว่างตามธรรมชาติของ Sheet)
+    ];
 
-    <style>
-        body { font-family: 'Prompt', sans-serif; }
-        
-        /* Coffee Tone Gradient Background */
-        .bg-coffee {
-            background: linear-gradient(135deg, #F5EDCB 0%, #E6D5B8 50%, #C9A66B 100%);
-        }
+    sheet.appendRow(newRowData);
+    return responseJSON({ status: 'success', message: 'Registered', memberId: "" });
+  }
+}
 
-        /* Nexus Card Design with Image Background */
-        .nexus-card-bg {
-            background-image: url('./Digital Card.png'); 
-            background-size: 100% 100%;
-            background-repeat: no-repeat;
-            background-position: center;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-        }
+function findRowIndexByUserId(sheet, userId) {
+  const textFinder = sheet.createTextFinder(userId).matchEntireCell(true);
+  const results = textFinder.findAll();
+  for (let i = 0; i < results.length; i++) {
+    if (results[i].getColumn() === 2) return results[i].getRow();
+  }
+  return -1;
+}
 
-        /* Text Shadow for better readability on image */
-        .text-shadow {
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
+function responseJSON(data) {
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+}
 
-        /* Loader Animation */
-        .loader {
-            border-top-color: #8D6E63;
-            -webkit-animation: spinner 1.5s linear infinite;
-            animation: spinner 1.5s linear infinite;
-        }
-        @keyframes spinner {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
-</head>
-<body class="bg-coffee min-h-screen flex items-center justify-center p-4">
-
-    <!-- Container -->
-    <div id="app-container" class="w-full max-w-md bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden min-h-[400px] relative">
-        
-        <!-- HEADER DESIGN -->
-        <div class="h-2 bg-[#8D6E63] w-full absolute top-0"></div>
-
-        <!-- 1. LOADING SCREEN -->
-        <div id="loading-screen" class="flex flex-col items-center justify-center h-[400px] space-y-4 p-8 text-center">
-            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
-            <div>
-                <p class="text-[#6D4C41] font-bold text-lg mb-1">กำลังเชื่อมต่อฐานข้อมูล...</p>
-                <p class="text-[#8D6E63] text-sm opacity-80 animate-pulse">กรุณารอสักครู่ ระบบกำลังประมวลผล</p>
-            </div>
-        </div>
-
-        <!-- 2. FORM SCREEN (ShowForm) -->
-        <div id="form-screen" class="hidden p-6">
-            <!-- Header Profile -->
-            <div class="flex justify-between items-start mb-6">
-                <div>
-                    <h2 class="text-2xl font-bold text-[#5D4037]">ยินดีต้อนรับ</h2>
-                    <p id="form-greeting" class="text-gray-500 italic text-sm mt-1">สวัสดี คุณ...</p>
-                </div>
-                <div class="relative">
-                    <img id="form-profile-img" src="" alt="Profile" class="w-16 h-16 rounded-full border-4 border-white shadow-md object-cover">
-                    <div class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                </div>
-            </div>
-
-            <!-- Description -->
-            <div class="bg-[#FFF8E1] p-4 rounded-lg border border-[#FFE082] mb-6">
-                <p class="text-[#6D4C41] text-sm leading-relaxed">
-                    เพื่อให้ระบบส่งข้อความที่เหมาะสมกับคุณที่สุด <br>
-                    คุณ <span id="desc-displayname" class="font-bold text-[#5D4037]">...</span> สะดวกให้เราเรียกคุณว่าอะไรดีครับ?
-                </p>
-            </div>
-
-            <!-- Inputs -->
-            <div class="space-y-4 mb-8">
-                <div>
-                    <label class="block text-[#5D4037] text-sm font-medium mb-1">ชื่อจริง - นามสกุล</label>
-                    <input type="text" id="input-realname" placeholder="ตัวอย่าง: สมศรี วงค์พระคริสต์" 
-                           class="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-[#8D6E63] focus:ring-2 focus:ring-[#8D6E63]/20 outline-none transition-all">
-                </div>
-                <div>
-                    <label class="block text-[#5D4037] text-sm font-medium mb-1">ชื่อเล่น</label>
-                    <input type="text" id="input-nickname" placeholder="ตัวอย่าง: ยาย่า อัลฟ่า7" 
-                           class="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-[#8D6E63] focus:ring-2 focus:ring-[#8D6E63]/20 outline-none transition-all">
-                </div>
-            </div>
-
-            <!-- Buttons -->
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="handleCancel()" class="py-3 rounded-lg border border-gray-300 text-gray-500 font-medium hover:bg-gray-50 transition-colors">
-                    ยกเลิก
-                </button>
-                <button onclick="handleSave()" class="py-3 rounded-lg bg-[#8D6E63] text-white font-medium shadow-lg hover:bg-[#6D4C41] transform active:scale-95 transition-all">
-                    บันทึกข้อมูล
-                </button>
-            </div>
-        </div>
-
-        <!-- 3. CARD SCREEN (ShowCard) -->
-        <div id="card-screen" class="hidden p-6 flex flex-col items-center">
-            <h2 class="text-xl font-bold text-[#5D4037] mb-6">Digital Member Card</h2>
-            
-            <!-- THE CARD -->
-            <div class="nexus-card-bg w-full aspect-[1.586/1] rounded-xl relative text-white shadow-2xl transform transition-transform hover:scale-[1.01] duration-300 mb-8 overflow-hidden">
-                
-                <!-- Overlay Gradient -->
-                <div class="absolute inset-0 bg-black/10"></div>
-
-                <!-- 1. Profile Picture -->
-                <div class="absolute top-3 right-3 md:top-4 md:right-4 z-10">
-                    <img id="card-profile-img" src="" class="w-12 h-12 md:w-20 md:h-20 rounded-full border-4 border-white shadow-lg object-cover">
-                </div>
-
-                <!-- 2. Name -->
-                <div class="absolute inset-0 flex items-center justify-center px-4 z-10">
-                    <h1 id="card-name" class="text-white font-bold text-lg md:text-2xl text-center text-shadow break-words w-full leading-tight">
-                        ...
-                    </h1>
-                </div>
-
-                <!-- 3. Member ID -->
-                <div class="absolute bottom-4 right-5 z-10 text-right">
-                    <p id="card-member-id" class="text-gray-200 font-mono text-xs md:text-sm tracking-widest font-medium text-shadow hidden">
-                        <!-- ID จะแสดงที่นี่ -->
-                    </p>
-                </div>
-            </div>
-
-            <!-- Confirmation Area -->
-            <div class="w-full text-center space-y-4">
-                
-                <!-- NEW MESSAGE ADDED HERE -->
-                <p class="text-green-600 font-bold text-base bg-green-50 py-2 rounded-lg border border-green-200 shadow-sm">
-                    บัตรเปิดใช้เรียบร้อยแล้ว (Activated)
-                </p>
-
-                <p class="text-[#6D4C41] text-sm">ต้องการแก้ไขชื่อ หรือไม่?</p>
-                <div class="grid grid-cols-2 gap-4">
-                    <button onclick="editInfo()" class="py-3 rounded-lg border border-[#8D6E63] text-[#8D6E63] font-medium hover:bg-[#F5EDCB] transition-colors">
-                        แก้ไขชื่อ
-                    </button>
-                    <button onclick="confirmClose()" class="py-3 rounded-lg bg-[#005bea] text-white font-medium shadow-lg hover:bg-[#004bb5] transform active:scale-95 transition-all">
-                        ถูกต้องแล้ว
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Version Display -->
-        <div class="absolute bottom-1 right-2 pointer-events-none">
-            <span class="text-[10px] text-gray-400 opacity-60">v1.5</span>
-        </div>
-
-    </div>
-
-    <script>
-        // --- CONFIGURATION ---
-        const LIFF_ID = "2008560135-06VyMziu"; 
-        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwEPR9FARhVxyQu3_spLb47kue08an21zNlrpOb5Xg7-hr_4Ag3U726Wl-ICUTWY_F3nQ/exec"; 
-
-        // --- GLOBAL STATE ---
-        let lineProfile = {};
-        let backendData = {};
-
-        // --- DOM ELEMENTS ---
-        const screens = {
-            loading: document.getElementById('loading-screen'),
-            form: document.getElementById('form-screen'),
-            card: document.getElementById('card-screen')
-        };
-
-        // --- INITIALIZATION ---
-        async function main() {
-            try {
-                await liff.init({ liffId: LIFF_ID });
-                
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                    return;
-                }
-
-                lineProfile = await liff.getProfile();
-                updateUIWithProfile(lineProfile);
-
-                checkUserStatus();
-
-            } catch (err) {
-                console.error(err);
-                Swal.fire('Error', 'ไม่สามารถเชื่อมต่อ LIFF ได้: ' + err.message, 'error');
-            }
-        }
-
-        function updateUIWithProfile(profile) {
-            document.getElementById('form-greeting').innerText = `สวัสดี คุณ ${profile.displayName}`;
-            document.getElementById('desc-displayname').innerText = profile.displayName; 
-            document.getElementById('form-profile-img').src = profile.pictureUrl;
-            document.getElementById('card-profile-img').src = profile.pictureUrl;
-        }
-
-        function showScreen(screenName) {
-            Object.values(screens).forEach(el => el.classList.add('hidden'));
-            screens[screenName].classList.remove('hidden');
-        }
-
-        async function checkUserStatus() {
-            try {
-                const response = await fetch(GAS_ENDPOINT, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: 'CHECK_USER',
-                        userId: lineProfile.userId
-                    })
-                });
-                const data = await response.json();
-                backendData = data;
-
-                if (data.status === 'success') {
-                    if (data.isUserExist && data.hasRegisterName) {
-                        renderCard(data.userData);
-                        showScreen('card');
-                    } else {
-                        showScreen('form');
-                    }
-                } else {
-                    throw new Error(data.message);
-                }
-
-            } catch (err) {
-                console.error(err);
-                Swal.fire('Error', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
-            }
-        }
-
-        async function saveToGAS(updateRegisterName, realName, nickname, isSilent = false) {
-            if (!isSilent) {
-                Swal.fire({
-                    title: 'กำลังบันทึก...',
-                    text: 'กรุณารอซักครู่',
-                    allowOutsideClick: false,
-                    didOpen: () => Swal.showLoading()
-                });
-            }
-
-            let finalRegisterName = "";
-            if (updateRegisterName && (realName || nickname)) {
-                finalRegisterName = `${realName} [${nickname}]`.trim();
-            }
-
-            try {
-                const response = await fetch(GAS_ENDPOINT, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: 'REGISTER',
-                        userId: lineProfile.userId,
-                        payload: {
-                            displayName: lineProfile.displayName,
-                            pictureUrl: lineProfile.pictureUrl,
-                            statusMessage: lineProfile.statusMessage || "",
-                            lineRegisterName: finalRegisterName,
-                            updateRegisterName: updateRegisterName
-                        }
-                    })
-                });
-                const data = await response.json();
-
-                if (data.status === 'success') {
-                    if (!isSilent) Swal.close();
-                    
-                    backendData.userData = {
-                        lineRegisterName: finalRegisterName || "ไม่ระบุชื่อ",
-                        memberId: data.memberId
-                    };
-
-                    renderCard(backendData.userData);
-                    showScreen('card');
-                } else {
-                    throw new Error(data.message);
-                }
-
-            } catch (err) {
-                if (!isSilent) Swal.fire('Error', 'บันทึกข้อมูลไม่สำเร็จ', 'error');
-            }
-        }
-
-        function handleSave() {
-            const realName = document.getElementById('input-realname').value.trim();
-            const nickname = document.getElementById('input-nickname').value.trim();
-
-            if (!realName) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'สะดวกให้เราเรียกคุณว่าอะไรดีครับ?', 
-                    confirmButtonColor: '#8D6E63'
-                });
-                return;
-            }
-            saveToGAS(true, realName, nickname, false); 
-        }
-
-        function handleCancel() {
-            if (backendData.isUserExist) {
-                liff.closeWindow();
-            } else {
-                saveToGAS(false, "", "", true).then(() => {});
-            }
-        }
-
-        function editInfo() {
-            const currentName = backendData.userData.lineRegisterName || "";
-            const match = currentName.match(/^(.*)\s\[(.*)\]$/);
-            
-            if (match) {
-                document.getElementById('input-realname').value = match[1];
-                document.getElementById('input-nickname').value = match[2];
-            } else {
-                document.getElementById('input-realname').value = currentName;
-            }
-            showScreen('form');
-        }
-
-        function confirmClose() {
-            Swal.fire({
-                icon: 'success',
-                title: 'ขอบคุณครับ',
-                text: 'ระบบได้ยืนยันข้อมูลเรียบร้อยแล้ว',
-                showConfirmButton: false,
-                timer: 1500
-            }).then(() => {
-                liff.closeWindow();
-            });
-        }
-
-        function renderCard(userData) {
-            const nameEl = document.getElementById('card-name');
-            const idEl = document.getElementById('card-member-id');
-
-            nameEl.innerText = userData.lineRegisterName || "ไม่ระบุชื่อ";
-            
-            // เช็คค่าว่างอย่างเคร่งครัด
-            if (userData.memberId && userData.memberId.toString().trim() !== "") {
-                idEl.innerText = userData.memberId;
-                idEl.classList.remove('hidden');
-            } else {
-                idEl.innerText = "";
-                idEl.classList.add('hidden');
-            }
-        }
-
-        main();
-
-    </script>
-</body>
-</html>
+function doGet(e) { return ContentService.createTextOutput("GAS API is Online."); }
