@@ -28,7 +28,6 @@
         /* Nexus Card Design with Image Background */
         .nexus-card-bg {
             background-image: url('./Digital Card.png'); 
-            /* ปรับเป็น 100% 100% เพื่อไม่ให้ภาพโดนตัดขอบ (Fit to container) */
             background-size: 100% 100%;
             background-repeat: no-repeat;
             background-position: center;
@@ -61,9 +60,12 @@
         <div class="h-2 bg-[#8D6E63] w-full absolute top-0"></div>
 
         <!-- 1. LOADING SCREEN -->
-        <div id="loading-screen" class="flex flex-col items-center justify-center h-[400px] space-y-4">
+        <div id="loading-screen" class="flex flex-col items-center justify-center h-[400px] space-y-4 p-8 text-center">
             <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
-            <p class="text-[#6D4C41] font-medium animate-pulse">กำลังเชื่อมต่อข้อมูล...</p>
+            <div>
+                <p class="text-[#6D4C41] font-bold text-lg mb-1">กำลังเชื่อมต่อฐานข้อมูล...</p>
+                <p class="text-[#8D6E63] text-sm opacity-80 animate-pulse">กรุณารอสักครู่ ระบบกำลังประมวลผล</p>
+            </div>
         </div>
 
         <!-- 2. FORM SCREEN (ShowForm) -->
@@ -123,31 +125,34 @@
                 <!-- Overlay Gradient -->
                 <div class="absolute inset-0 bg-black/10"></div>
 
-                <!-- 1. Profile Picture (Top Right) -->
-                <!-- ปรับขนาดเล็กลงในมือถือ w-12 h-12 และขยับขึ้น top-3 เพื่อไม่ให้บังชื่อ -->
+                <!-- 1. Profile Picture -->
                 <div class="absolute top-3 right-3 md:top-4 md:right-4 z-10">
                     <img id="card-profile-img" src="" class="w-12 h-12 md:w-20 md:h-20 rounded-full border-4 border-white shadow-lg object-cover">
                 </div>
 
-                <!-- 2. Name (Center) -->
-                <!-- Reduced Font Size: text-lg (mobile), text-2xl (desktop) -->
+                <!-- 2. Name -->
                 <div class="absolute inset-0 flex items-center justify-center px-4 z-10">
                     <h1 id="card-name" class="text-white font-bold text-lg md:text-2xl text-center text-shadow break-words w-full leading-tight">
                         ...
                     </h1>
                 </div>
 
-                <!-- 3. Member ID (Bottom Right) -->
+                <!-- 3. Member ID -->
                 <div class="absolute bottom-4 right-5 z-10 text-right">
                     <p id="card-member-id" class="text-gray-200 font-mono text-xs md:text-sm tracking-widest font-medium text-shadow hidden">
                         <!-- ID จะแสดงที่นี่ -->
                     </p>
                 </div>
-                
             </div>
 
             <!-- Confirmation Area -->
             <div class="w-full text-center space-y-4">
+                
+                <!-- NEW MESSAGE ADDED HERE -->
+                <p class="text-green-600 font-bold text-base bg-green-50 py-2 rounded-lg border border-green-200 shadow-sm">
+                    บัตรเปิดใช้เรียบร้อยแล้ว (Activated)
+                </p>
+
                 <p class="text-[#6D4C41] text-sm">ต้องการแก้ไขชื่อ หรือไม่?</p>
                 <div class="grid grid-cols-2 gap-4">
                     <button onclick="editInfo()" class="py-3 rounded-lg border border-[#8D6E63] text-[#8D6E63] font-medium hover:bg-[#F5EDCB] transition-colors">
@@ -162,7 +167,7 @@
 
         <!-- Version Display -->
         <div class="absolute bottom-1 right-2 pointer-events-none">
-            <span class="text-[10px] text-gray-400 opacity-60">v1.4</span>
+            <span class="text-[10px] text-gray-400 opacity-60">v1.5</span>
         </div>
 
     </div>
@@ -193,11 +198,9 @@
                     return;
                 }
 
-                // 1. Get Profile (Fast)
                 lineProfile = await liff.getProfile();
                 updateUIWithProfile(lineProfile);
 
-                // 2. Check User Status from GAS (Slower)
                 checkUserStatus();
 
             } catch (err) {
@@ -206,21 +209,18 @@
             }
         }
 
-        // Update UI elements that don't need GAS data
         function updateUIWithProfile(profile) {
             document.getElementById('form-greeting').innerText = `สวัสดี คุณ ${profile.displayName}`;
-            document.getElementById('desc-displayname').innerText = profile.displayName; // Update name in description
+            document.getElementById('desc-displayname').innerText = profile.displayName; 
             document.getElementById('form-profile-img').src = profile.pictureUrl;
             document.getElementById('card-profile-img').src = profile.pictureUrl;
         }
 
-        // Switch Screen Helper
         function showScreen(screenName) {
             Object.values(screens).forEach(el => el.classList.add('hidden'));
             screens[screenName].classList.remove('hidden');
         }
 
-        // --- API INTERACTIONS ---
         async function checkUserStatus() {
             try {
                 const response = await fetch(GAS_ENDPOINT, {
@@ -250,7 +250,6 @@
             }
         }
 
-        // เพิ่ม isSilent param เพื่อไม่ให้แสดง Loading ตอนกด Cancel
         async function saveToGAS(updateRegisterName, realName, nickname, isSilent = false) {
             if (!isSilent) {
                 Swal.fire({
@@ -288,7 +287,6 @@
                     
                     backendData.userData = {
                         lineRegisterName: finalRegisterName || "ไม่ระบุชื่อ",
-                        // ใช้ ID จาก Backend เท่านั้น (ถ้าส่งว่างมา ก็จะเป็นค่าว่าง)
                         memberId: data.memberId
                     };
 
@@ -303,8 +301,6 @@
             }
         }
 
-        // --- EVENT HANDLERS ---
-
         function handleSave() {
             const realName = document.getElementById('input-realname').value.trim();
             const nickname = document.getElementById('input-nickname').value.trim();
@@ -312,20 +308,18 @@
             if (!realName) {
                 Swal.fire({
                     icon: 'warning',
-                    title: 'สะดวกให้เราเรียกคุณว่าอะไรดีครับ?', // เปลี่ยนข้อความ Validation
+                    title: 'สะดวกให้เราเรียกคุณว่าอะไรดีครับ?', 
                     confirmButtonColor: '#8D6E63'
                 });
                 return;
             }
-
-            saveToGAS(true, realName, nickname, false); // false = show loading
+            saveToGAS(true, realName, nickname, false); 
         }
 
         function handleCancel() {
             if (backendData.isUserExist) {
                 liff.closeWindow();
             } else {
-                // ส่งค่า true (isSilent) เพื่อไม่ให้ขึ้น Loading
                 saveToGAS(false, "", "", true).then(() => {});
             }
         }
@@ -340,7 +334,6 @@
             } else {
                 document.getElementById('input-realname').value = currentName;
             }
-            
             showScreen('form');
         }
 
@@ -360,11 +353,9 @@
             const nameEl = document.getElementById('card-name');
             const idEl = document.getElementById('card-member-id');
 
-            // 1. Set Name
             nameEl.innerText = userData.lineRegisterName || "ไม่ระบุชื่อ";
             
-            // 2. Set Member ID (Hide if empty)
-            // เช็คค่าว่างอย่างเคร่งครัด ถ้าไม่มีข้อมูลให้ซ่อน Element ทันที
+            // เช็คค่าว่างอย่างเคร่งครัด
             if (userData.memberId && userData.memberId.toString().trim() !== "") {
                 idEl.innerText = userData.memberId;
                 idEl.classList.remove('hidden');
@@ -374,7 +365,6 @@
             }
         }
 
-        // Start App
         main();
 
     </script>
