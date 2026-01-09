@@ -3,527 +3,372 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NxLife Community Online</title>
+    <title>Nexus Life Activation</title>
+    
+    <!-- LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <!-- Tailwind CSS (ผ่าน CDN เพื่อความรวดเร็ว) -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Google Fonts: Prompt -->
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
     
-    <!-- SweetAlert2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-
-    <!-- LIFF SDK -->
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        :root {
-            /* Coffee Tone Variables */
-            --bg-color: #F5F5DC; 
-            --primary-brown: #8B4513; 
-            --secondary-brown: #A0522D; 
-            --gradient-bg: linear-gradient(135deg, #eacda3 0%, #d6ae7b 100%);
+        body { font-family: 'Prompt', sans-serif; }
+        
+        /* Coffee Tone Gradient Background */
+        .bg-coffee {
+            background: linear-gradient(135deg, #F5EDCB 0%, #E6D5B8 50%, #C9A66B 100%);
         }
 
-        body {
-            font-family: 'Prompt', sans-serif;
-            margin: 0;
-            padding: 0;
-            background: var(--gradient-bg);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #4B3621;
-            overflow-x: hidden;
+        /* Nexus Card Gradient */
+        .bg-nexus-card {
+            background: linear-gradient(135deg, #005bea 0%, #00c6fb 100%);
+            box-shadow: 0 10px 25px -5px rgba(0, 91, 234, 0.4);
         }
 
-        .container {
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-            padding: 20px;
-        }
-
-        /* Glassmorphism Card Style (Main Container) */
-        .card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px 20px;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-        }
-
-        .profile-img {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            border: 4px solid var(--primary-brown);
-            object-fit: cover;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        h1 {
-            font-size: 1.5rem;
-            margin-bottom: 5px;
-            color: var(--primary-brown);
-            font-weight: 600;
-        }
-
-        p.status {
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 25px;
-            font-style: italic;
-        }
-
-        .btn-activate {
-            background: linear-gradient(45deg, var(--primary-brown), var(--secondary-brown));
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 50px;
-            font-size: 1rem;
-            font-family: 'Prompt', sans-serif;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
-            transition: all 0.2s;
-            width: 80%;
-        }
-
-        .btn-activate:active {
-            transform: scale(0.95);
-        }
-
-        .version-text {
-            margin-top: 20px;
-            font-size: 0.7rem;
-            color: #999;
-            opacity: 0.8;
-        }
-
-        /* --- Loading Animation --- */
+        /* Loader Animation */
         .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary-brown);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-            display: none;
+            border-top-color: #8D6E63;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
         }
-        
-        #checking-status {
-            color: var(--primary-brown);
-            font-size: 0.9rem;
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
-        }
-
-        @keyframes spin {
+        @keyframes spinner {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        /* --- Digital Member Card CSS (New) --- */
-        .digital-member-card {
-            width: 100%;
-            max-width: 320px;
-            height: 180px;
-            background: linear-gradient(135deg, #654321 0%, #8B4513 50%, #CD853F 100%);
-            border-radius: 15px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.1);
-            position: relative;
-            overflow: hidden;
-            color: #FFF;
-            text-align: left;
-            padding: 20px;
-            box-sizing: border-box;
-            margin: 0 auto 15px auto;
-            display: flex;
-            align-items: center;
-        }
-
-        /* Effect แสงสะท้อน */
-        .digital-member-card::before {
-            content: '';
-            position: absolute;
-            top: -50px;
-            right: -50px;
-            width: 150px;
-            height: 150px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            filter: blur(30px);
-        }
-
-        .card-content-flex {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            z-index: 2;
-        }
-
-        .card-avatar-small {
-            width: 65px;
-            height: 65px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.8);
-            object-fit: cover;
-            margin-right: 15px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            flex-shrink: 0;
-        }
-
-        .card-info-box {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .card-brand {
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: rgba(255,255,255,0.7);
-            margin-bottom: 5px;
-        }
-
-        .card-user-name {
-            font-size: 1.1rem;
-            font-weight: 600;
-            line-height: 1.3;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-            margin-bottom: 5px;
-        }
-
-        .card-id-line {
-            font-size: 0.75rem;
-            color: rgba(255,255,255,0.9);
-            background: rgba(0,0,0,0.2);
-            padding: 2px 8px;
-            border-radius: 4px;
-            display: inline-block;
-        }
-
-        /* Status Badge Under Card */
-        .status-badge-active {
-            color: #2e7d32;
-            font-weight: 500;
-            font-size: 1rem;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-        }
-        
-        .status-icon {
-            font-size: 1.2rem;
-        }
-
-        /* SweetAlert Customization */
-        .swal2-popup {
-            font-family: 'Prompt', sans-serif !important;
-            border-radius: 15px !important;
-            padding-bottom: 20px !important;
-        }
-        .swal2-title {
-            color: var(--primary-brown) !important;
-            font-size: 1.2rem !important;
-        }
-        .swal2-confirm {
-            background-color: var(--primary-brown) !important;
-            box-shadow: 0 4px 10px rgba(139, 69, 19, 0.3) !important;
-        }
-        .swal2-input {
-            border-color: #d6ae7b !important;
-        }
     </style>
 </head>
-<body>
+<body class="bg-coffee min-h-screen flex items-center justify-center p-4">
 
-    <div class="container">
-        <div class="card" id="main-card">
-            <!-- Loading State -->
-            <div id="loading-state">
-                <div class="loader" style="display:block;"></div>
-                <p>กำลังโหลดข้อมูล...</p>
+    <!-- Container -->
+    <div id="app-container" class="w-full max-w-md bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden min-h-[400px] relative">
+        
+        <!-- HEADER DESIGN -->
+        <div class="h-2 bg-[#8D6E63] w-full absolute top-0"></div>
+
+        <!-- 1. LOADING SCREEN -->
+        <div id="loading-screen" class="flex flex-col items-center justify-center h-[400px] space-y-4">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
+            <p class="text-[#6D4C41] font-medium animate-pulse">กำลังเชื่อมต่อข้อมูล...</p>
+        </div>
+
+        <!-- 2. FORM SCREEN (ShowForm) -->
+        <div id="form-screen" class="hidden p-6">
+            <!-- Header Profile -->
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-[#5D4037]">ยินดีต้อนรับ</h2>
+                    <p id="form-greeting" class="text-gray-500 italic text-sm mt-1">สวัสดี คุณ...</p>
+                </div>
+                <div class="relative">
+                    <img id="form-profile-img" src="" alt="Profile" class="w-16 h-16 rounded-full border-4 border-white shadow-md object-cover">
+                    <div class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                </div>
             </div>
 
-            <!-- Content Area -->
-            <div id="content-area">
-                <img id="user-picture" src="https://via.placeholder.com/150" alt="Profile" class="profile-img">
-                <h1 id="user-name">Loading...</h1>
-                <p id="user-status" class="status"></p>
-                
-                <div id="action-area">
-                    <p id="checking-status">กำลังเชื่อมต่อระบบสมาชิก...</p>
-                    <button id="btn-retry" class="btn-activate" onclick="startActivation()" style="display:none;">ลองใหม่อีกครั้ง</button>
-                </div>
+            <!-- Description -->
+            <div class="bg-[#FFF8E1] p-4 rounded-lg border border-[#FFE082] mb-6">
+                <p class="text-[#6D4C41] text-sm leading-relaxed">
+                    เพื่อให้ระบบส่งข้อความที่เหมาะสมกับคุณที่สุด <br>
+                    คุณสะดวกให้เราเรียกคุณว่าอะไรดีครับ?
+                </p>
+            </div>
 
-                <p class="version-text">Ver 1.0.4 (Button Text Update)</p>
+            <!-- Inputs -->
+            <div class="space-y-4 mb-8">
+                <div>
+                    <label class="block text-[#5D4037] text-sm font-medium mb-1">ชื่อจริง - นามสกุล</label>
+                    <input type="text" id="input-realname" placeholder="ตัวอย่าง: สมศรี วงค์พระคริสต์" 
+                           class="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-[#8D6E63] focus:ring-2 focus:ring-[#8D6E63]/20 outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-[#5D4037] text-sm font-medium mb-1">ชื่อเล่น</label>
+                    <input type="text" id="input-nickname" placeholder="ตัวอย่าง: ยาย่า" 
+                           class="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-[#8D6E63] focus:ring-2 focus:ring-[#8D6E63]/20 outline-none transition-all">
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="handleCancel()" class="py-3 rounded-lg border border-gray-300 text-gray-500 font-medium hover:bg-gray-50 transition-colors">
+                    ยกเลิก
+                </button>
+                <button onclick="handleSave()" class="py-3 rounded-lg bg-[#8D6E63] text-white font-medium shadow-lg hover:bg-[#6D4C41] transform active:scale-95 transition-all">
+                    บันทึกข้อมูล
+                </button>
             </div>
         </div>
+
+        <!-- 3. CARD SCREEN (ShowCard) -->
+        <div id="card-screen" class="hidden p-6 flex flex-col items-center">
+            <h2 class="text-xl font-bold text-[#5D4037] mb-6">Digital Member Card</h2>
+            
+            <!-- THE CARD -->
+            <div class="bg-nexus-card w-full aspect-[1.586/1] rounded-xl relative p-5 text-white shadow-2xl transform transition-transform hover:scale-[1.02] duration-300 mb-8 overflow-hidden">
+                <!-- Background Decoration -->
+                <div class="absolute top-[-50px] right-[-50px] w-32 h-32 bg-white opacity-10 rounded-full blur-2xl"></div>
+                <div class="absolute bottom-[-30px] left-[-30px] w-40 h-40 bg-black opacity-10 rounded-full blur-3xl"></div>
+
+                <!-- Top Row -->
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-2xl font-bold tracking-wide">Nexus Life</h3>
+                        <p class="text-xs uppercase tracking-[0.2em] opacity-80">Community</p>
+                    </div>
+                    <img id="card-profile-img" src="" class="w-12 h-12 rounded-full border-2 border-white/50 shadow-sm object-cover">
+                </div>
+
+                <!-- Middle Content (Name) -->
+                <div class="absolute top-1/2 left-0 w-full transform -translate-y-1/2 px-5 mt-2">
+                    <p class="text-xs opacity-70 mb-1">Name / Nickname</p>
+                    <h1 id="card-name" class="text-lg font-semibold truncate">...</h1>
+                </div>
+
+                <!-- Bottom Row -->
+                <div class="absolute bottom-5 left-5 right-5 flex justify-between items-end">
+                    <div>
+                        <span class="inline-block bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
+                            ACTIVATED
+                        </span>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] opacity-70">Member ID</p>
+                        <p id="card-member-id" class="font-mono text-sm tracking-widest font-medium">Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirmation Area -->
+            <div class="w-full text-center space-y-4">
+                <p class="text-[#6D4C41] text-sm">ข้อมูลถูกต้องหรือไม่?</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="editInfo()" class="py-3 rounded-lg border border-[#8D6E63] text-[#8D6E63] font-medium hover:bg-[#F5EDCB] transition-colors">
+                        แก้ไขข้อมูล
+                    </button>
+                    <button onclick="confirmClose()" class="py-3 rounded-lg bg-[#005bea] text-white font-medium shadow-lg hover:bg-[#004bb5] transform active:scale-95 transition-all">
+                        ถูกต้องแล้ว
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- SweetAlert2 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <script>
-        // --- Configuration ---
-        const LIFF_ID = '2008560135-06VyMziu';
-        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwEPR9FARhVxyQu3_spLb47kue08an21zNlrpOb5Xg7-hr_4Ag3U726Wl-ICUTWY_F3nQ/exec';
+        // --- CONFIGURATION ---
+        const LIFF_ID = "2008560135-06VyMziu"; // จาก Prompt (ถ้าไม่ใช่ให้เปลี่ยน)
+        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwEPR9FARhVxyQu3_spLb47kue08an21zNlrpOb5Xg7-hr_4Ag3U726Wl-ICUTWY_F3nQ/exec"; 
 
-        let liffProfile = {};
+        // --- GLOBAL STATE ---
+        let lineProfile = {};
+        let backendData = {};
 
-        // --- Initialize LIFF ---
+        // --- DOM ELEMENTS ---
+        const screens = {
+            loading: document.getElementById('loading-screen'),
+            form: document.getElementById('form-screen'),
+            card: document.getElementById('card-screen')
+        };
+
+        // --- INITIALIZATION ---
         async function main() {
             try {
                 await liff.init({ liffId: LIFF_ID });
+                
                 if (!liff.isLoggedIn()) {
                     liff.login();
                     return;
                 }
-                
-                liffProfile = await liff.getProfile();
-                renderProfile(liffProfile);
-                startActivation(); 
 
-            } catch (error) {
-                console.error(error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'LIFF Error',
-                    text: 'เชื่อมต่อ LINE ไม่สำเร็จ: ' + error.message
-                });
+                // 1. Get Profile (Fast)
+                lineProfile = await liff.getProfile();
+                updateUIWithProfile(lineProfile);
+
+                // 2. Check User Status from GAS (Slower)
+                checkUserStatus();
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Error', 'ไม่สามารถเชื่อมต่อ LIFF ได้: ' + err.message, 'error');
             }
         }
 
-        function renderProfile(profile) {
-            document.getElementById('loading-state').style.display = 'none';
-            document.getElementById('content-area').style.display = 'block';
-            
-            document.getElementById('user-picture').src = profile.pictureUrl || 'https://via.placeholder.com/100?text=No+Pic';
-            document.getElementById('user-name').innerText = profile.displayName;
-            document.getElementById('user-status').innerText = profile.statusMessage || '';
+        // Update UI elements that don't need GAS data
+        function updateUIWithProfile(profile) {
+            document.getElementById('form-greeting').innerText = `สวัสดี คุณ ${profile.displayName}`;
+            document.getElementById('form-profile-img').src = profile.pictureUrl;
+            document.getElementById('card-profile-img').src = profile.pictureUrl;
         }
 
-        // --- Core Action: Start Check Logic ---
-        async function startActivation() {
-            document.getElementById('btn-retry').style.display = 'none';
-            document.getElementById('checking-status').style.display = 'block';
+        // Switch Screen Helper
+        function showScreen(screenName) {
+            Object.values(screens).forEach(el => el.classList.add('hidden'));
+            screens[screenName].classList.remove('hidden');
+        }
 
-            // Loading Toast
-            const loadingToast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    Swal.showLoading();
+        // --- API INTERACTIONS ---
+        async function checkUserStatus() {
+            try {
+                const response = await fetch(GAS_ENDPOINT, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'CHECK_USER',
+                        userId: lineProfile.userId
+                    })
+                });
+                const data = await response.json();
+                backendData = data;
+
+                if (data.status === 'success') {
+                    if (data.isUserExist && data.hasRegisterName) {
+                        // CASE 1: มี User และมีชื่อแล้ว -> Show Card
+                        renderCard(data.userData);
+                        showScreen('card');
+                    } else {
+                        // CASE 2: ยังไม่มี User หรือยังไม่มีชื่อ -> Show Form
+                        showScreen('form');
+                    }
+                } else {
+                    throw new Error(data.message);
                 }
-            });
-            
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Error', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
+            }
+        }
+
+        async function saveToGAS(updateRegisterName, realName, nickname) {
+            // Show Loading
             Swal.fire({
-                title: 'กำลังตรวจสอบข้อมูล...',
-                text: 'กรุณารอสักครู่',
+                title: 'กำลังบันทึก...',
+                text: 'กรุณารอซักครู่',
                 allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
+                didOpen: () => Swal.showLoading()
             });
+
+            // Format Name: "RealName [Nickname]" or empty
+            let finalRegisterName = "";
+            if (updateRegisterName && (realName || nickname)) {
+                finalRegisterName = `${realName} [${nickname}]`.trim();
+            }
 
             try {
-                const response = await fetch(GAS_API_URL, {
-                    redirect: "follow",
+                const response = await fetch(GAS_ENDPOINT, {
                     method: 'POST',
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({ action: 'check_user', userId: liffProfile.userId })
+                    body: JSON.stringify({
+                        action: 'REGISTER',
+                        userId: lineProfile.userId,
+                        payload: {
+                            displayName: lineProfile.displayName,
+                            pictureUrl: lineProfile.pictureUrl,
+                            statusMessage: lineProfile.statusMessage || "",
+                            lineRegisterName: finalRegisterName,
+                            updateRegisterName: updateRegisterName
+                        }
+                    })
                 });
+                const data = await response.json();
 
-                if (!response.ok) {
-                    throw new Error(`Server returned status: ${response.status}`);
+                if (data.status === 'success') {
+                    Swal.close();
+                    
+                    // Update Local Data for Card
+                    backendData.userData = {
+                        lineRegisterName: finalRegisterName || "ไม่ระบุชื่อ",
+                        memberId: data.memberId
+                    };
+
+                    // Show Card
+                    renderCard(backendData.userData);
+                    showScreen('card');
+                } else {
+                    throw new Error(data.message);
                 }
 
-                const textResult = await response.text();
-                let data;
-                
-                try {
-                    data = JSON.parse(textResult);
-                } catch (e) {
-                    if (textResult.includes("<!DOCTYPE html>") || textResult.includes("Google")) {
-                        throw new Error("Permission Error: กรุณาตั้งค่า GAS Deploy เป็น 'Anyone'");
-                    }
-                    throw new Error("Invalid Response format");
-                }
-
-                Swal.close();
-                document.getElementById('checking-status').innerText = 'ตรวจสอบเสร็จสิ้น';
-                processUserStatus(data);
-
-            } catch (error) {
-                console.error("Activation Error:", error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'เชื่อมต่อไม่สำเร็จ',
-                    html: `เกิดข้อผิดพลาด: ${error.message}<br><br><small style="color:red">ลองกดปุ่มด้านล่างเพื่อเชื่อมต่อใหม่</small>`,
-                    confirmButtonText: 'ปิด'
-                });
-                
-                document.getElementById('checking-status').style.display = 'none';
-                document.getElementById('btn-retry').style.display = 'inline-block';
+            } catch (err) {
+                Swal.fire('Error', 'บันทึกข้อมูลไม่สำเร็จ', 'error');
             }
         }
 
-        function processUserStatus(data) {
-            // [Case 1] Activate แล้ว -> แสดงบัตรสมาชิก
-            if (data.status === 'found' && data.hasRegisterName) {
-                
-                // สร้าง HTML บัตรสมาชิก
-                const cardHtml = `
-                    <div class="digital-member-card">
-                        <div class="card-content-flex">
-                            <img src="${liffProfile.pictureUrl}" class="card-avatar-small" onerror="this.src='https://via.placeholder.com/100'">
-                            <div class="card-info-box">
-                                <div class="card-brand">NxLife Community</div>
-                                <div class="card-user-name">${data.registerName}</div>
-                                <div class="card-id-line">Member</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="status-badge-active">
-                        <span class="status-icon">✅</span> สถานะ: Activate แล้ว
-                    </div>
-                `;
+        // --- EVENT HANDLERS ---
 
+        function handleSave() {
+            const realName = document.getElementById('input-realname').value.trim();
+            const nickname = document.getElementById('input-nickname').value.trim();
+
+            if (!realName) {
                 Swal.fire({
-                    title: 'สมาชิก NxLife Community',
-                    html: cardHtml,
-                    showConfirmButton: true,
-                    confirmButtonText: 'รับทราบ',
-                    width: 'auto',
-                    padding: '1.5em'
+                    icon: 'warning',
+                    title: 'กรุณากรอกชื่อจริง',
+                    text: 'เพื่อสิทธิประโยชน์ของท่าน',
+                    confirmButtonColor: '#8D6E63'
                 });
-            }
-            // [Case 2 & 3] ยังไม่มีข้อมูล
-            else {
-                showRegistrationForm(data.status === 'not_found');
-            }
-        }
-
-        async function showRegistrationForm(isNewUser) {
-            const titleText = isNewUser ? 'ยินดีต้อนรับสมาชิกใหม่' : 'ข้อมูลยังไม่ครบถ้วน';
-            
-            const { value: formValues, dismiss } = await Swal.fire({
-                title: titleText,
-                html: `
-                    <p style="font-size:0.9rem; color:#666;">สวัสดีครับ คุณ ${liffProfile.displayName}<br>ต้องการให้ใส่ชื่อในบัตรว่าอะไรดีครับ</p>
-                    <label class="form-label">ชื่อจริง-นามสกุล</label>
-                    <input id="swal-input1" class="swal2-input" placeholder="เช่น สมชาย ใจดี">
-                    <label class="form-label">ชื่อเล่น</label>
-                    <input id="swal-input2" class="swal2-input" placeholder="เช่น กอล์ฟ">
-                `,
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonText: 'ตกลง',
-                cancelButtonText: 'ยกเลิก',
-                reverseButtons: true,
-                preConfirm: () => {
-                    return [
-                        document.getElementById('swal-input1').value,
-                        document.getElementById('swal-input2').value
-                    ]
-                }
-            });
-
-            let finalRegisterName = "";
-            
-            if (formValues) {
-                const realName = formValues[0].trim();
-                const nickName = formValues[1].trim();
-                
-                if(!realName) {
-                     Swal.fire('แจ้งเตือน', 'กรุณาระบุชื่อจริง', 'warning').then(() => showRegistrationForm(isNewUser));
-                     return;
-                }
-                finalRegisterName = `${realName} (${nickName})`;
-            } 
-            else if (dismiss === Swal.DismissReason.cancel) {
-                // Cancel = Save empty name
-            } else {
                 return;
             }
 
-            saveData(finalRegisterName);
+            // User-CHK = true/false handled by GAS logic (Update vs Insert)
+            // Just send data
+            saveToGAS(true, realName, nickname);
         }
 
-        function saveData(registerName) {
+        function handleCancel() {
+            if (backendData.isUserExist) {
+                // ถ้ามี User อยู่แล้ว กด Cancel คือจบการทำงาน (ปิด LIFF)
+                liff.closeWindow();
+            } else {
+                // ถ้าเป็น User ใหม่ กด Cancel -> บันทึกพื้นฐาน (ไม่เอา RegisterName) -> แล้วจบ
+                saveToGAS(false, "", "").then(() => {
+                    // หลังจาก save basic success, show card or close? 
+                    // Prompt says: "ShowCard" after update.
+                });
+            }
+        }
+
+        function editInfo() {
+            // Parse Name Back to Inputs
+            // Format: "RealName [Nickname]"
+            const currentName = backendData.userData.lineRegisterName || "";
+            const match = currentName.match(/^(.*)\s\[(.*)\]$/);
+            
+            if (match) {
+                document.getElementById('input-realname').value = match[1];
+                document.getElementById('input-nickname').value = match[2];
+            } else {
+                document.getElementById('input-realname').value = currentName;
+            }
+            
+            showScreen('form');
+        }
+
+        function confirmClose() {
             Swal.fire({
-                title: 'กำลังบันทึกข้อมูล...',
-                didOpen: () => Swal.showLoading(),
-                allowOutsideClick: false
-            });
-
-            const payload = {
-                action: 'register',
-                userId: liffProfile.userId,
-                displayName: liffProfile.displayName,
-                pictureUrl: liffProfile.pictureUrl,
-                statusMessage: liffProfile.statusMessage,
-                registerName: registerName
-            };
-
-            fetch(GAS_API_URL, {
-                redirect: "follow",
-                method: 'POST',
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.text())
-            .then(text => {
-                try {
-                    return JSON.parse(text);
-                } catch(e) {
-                    throw new Error("Server response is not JSON");
-                }
-            })
-            .then(res => {
-                if(res.status === 'success') {
-                    // ถ้าลงทะเบียนสำเร็จ (มีชื่อ) ให้แสดงบัตรทันทีเหมือน Case 1
-                    if (registerName) {
-                        Swal.close();
-                        // เรียกใช้ logic เดียวกับ Case 1 เพื่อโชว์บัตร
-                        processUserStatus({ status: 'found', hasRegisterName: true, registerName: registerName });
-                    } else {
-                        // ถ้า Cancel (ไม่มีชื่อ) แจ้งเตือนปกติ
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'สำเร็จ!',
-                            text: 'บันทึกข้อมูลพื้นฐานแล้ว (คุณสามารถมาเพิ่มชื่อได้ภายหลัง)',
-                            confirmButtonText: 'ตกลง'
-                        }).then(() => {
-                            liff.closeWindow();
-                        });
-                    }
-                } else {
-                    throw new Error(res.message);
-                }
-            })
-            .catch(err => {
-                Swal.fire('Error', 'เกิดข้อผิดพลาด: ' + err.message, 'error');
+                icon: 'success',
+                title: 'ขอบคุณครับ',
+                text: 'ระบบได้ยืนยันข้อมูลเรียบร้อยแล้ว',
+                showConfirmButton: false,
+                timer: 1500
+            }).then(() => {
+                liff.closeWindow();
             });
         }
 
+        function renderCard(userData) {
+            const nameEl = document.getElementById('card-name');
+            const idEl = document.getElementById('card-member-id');
+
+            nameEl.innerText = userData.lineRegisterName || "ไม่ระบุชื่อ";
+            idEl.innerText = userData.memberId || "V26-XXXX";
+        }
+
+        // Start App
         main();
+
     </script>
 </body>
 </html>
