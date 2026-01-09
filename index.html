@@ -8,11 +8,11 @@
     <!-- LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
-    <!-- Tailwind CSS (ผ่าน CDN เพื่อความรวดเร็ว) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Google Fonts: Prompt -->
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -25,10 +25,18 @@
             background: linear-gradient(135deg, #F5EDCB 0%, #E6D5B8 50%, #C9A66B 100%);
         }
 
-        /* Nexus Card Gradient */
-        .bg-nexus-card {
-            background: linear-gradient(135deg, #005bea 0%, #00c6fb 100%);
-            box-shadow: 0 10px 25px -5px rgba(0, 91, 234, 0.4);
+        /* Nexus Card Design with Image Background */
+        .nexus-card-bg {
+            /* แก้ไขเป็น .png ตามที่ร้องขอ */
+            background-image: url('./Digital Card.png'); 
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+
+        /* Text Shadow for better readability on image */
+        .text-shadow {
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
         /* Loader Animation */
@@ -109,43 +117,35 @@
             <h2 class="text-xl font-bold text-[#5D4037] mb-6">Digital Member Card</h2>
             
             <!-- THE CARD -->
-            <div class="bg-nexus-card w-full aspect-[1.586/1] rounded-xl relative p-5 text-white shadow-2xl transform transition-transform hover:scale-[1.02] duration-300 mb-8 overflow-hidden">
-                <!-- Background Decoration -->
-                <div class="absolute top-[-50px] right-[-50px] w-32 h-32 bg-white opacity-10 rounded-full blur-2xl"></div>
-                <div class="absolute bottom-[-30px] left-[-30px] w-40 h-40 bg-black opacity-10 rounded-full blur-3xl"></div>
+            <div class="nexus-card-bg w-full aspect-[1.586/1] rounded-xl relative text-white shadow-2xl transform transition-transform hover:scale-[1.01] duration-300 mb-8 overflow-hidden">
+                
+                <!-- Overlay Gradient (Optional: เพื่อให้อ่านง่ายขึ้นถ้าภาพพื้นหลังสว่างไป) -->
+                <div class="absolute inset-0 bg-black/10"></div>
 
-                <!-- Top Row -->
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h3 class="text-2xl font-bold tracking-wide">Nexus Life</h3>
-                        <p class="text-xs uppercase tracking-[0.2em] opacity-80">Community</p>
-                    </div>
-                    <img id="card-profile-img" src="" class="w-12 h-12 rounded-full border-2 border-white/50 shadow-sm object-cover">
+                <!-- 1. Profile Picture (Top Right) -->
+                <div class="absolute top-4 right-4 z-10">
+                    <img id="card-profile-img" src="" class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white shadow-lg object-cover">
                 </div>
 
-                <!-- Middle Content (Name) -->
-                <div class="absolute top-1/2 left-0 w-full transform -translate-y-1/2 px-5 mt-2">
-                    <p class="text-xs opacity-70 mb-1">Name / Nickname</p>
-                    <h1 id="card-name" class="text-lg font-semibold truncate">...</h1>
+                <!-- 2. Name (Center) -->
+                <div class="absolute inset-0 flex items-center justify-center px-4 z-10">
+                    <h1 id="card-name" class="text-white font-bold text-xl md:text-3xl text-center text-shadow break-words w-full leading-tight">
+                        ...
+                    </h1>
                 </div>
 
-                <!-- Bottom Row -->
-                <div class="absolute bottom-5 left-5 right-5 flex justify-between items-end">
-                    <div>
-                        <span class="inline-block bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
-                            ACTIVATED
-                        </span>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-[10px] opacity-70">Member ID</p>
-                        <p id="card-member-id" class="font-mono text-sm tracking-widest font-medium">Loading...</p>
-                    </div>
+                <!-- 3. Member ID (Bottom Right) -->
+                <div class="absolute bottom-4 right-5 z-10 text-right">
+                    <p id="card-member-id" class="text-gray-200 font-mono text-xs md:text-sm tracking-widest font-medium text-shadow hidden">
+                        <!-- ID จะแสดงที่นี่ -->
+                    </p>
                 </div>
+                
             </div>
 
             <!-- Confirmation Area -->
             <div class="w-full text-center space-y-4">
-                <p class="text-[#6D4C41] text-sm">ข้อมูลถูกต้องหรือไม่?</p>
+                <p class="text-[#6D4C41] text-sm">ต้องการแก้ไขชื่อ หรือไม่?</p>
                 <div class="grid grid-cols-2 gap-4">
                     <button onclick="editInfo()" class="py-3 rounded-lg border border-[#8D6E63] text-[#8D6E63] font-medium hover:bg-[#F5EDCB] transition-colors">
                         แก้ไขข้อมูล
@@ -161,7 +161,7 @@
 
     <script>
         // --- CONFIGURATION ---
-        const LIFF_ID = "2008560135-06VyMziu"; // จาก Prompt (ถ้าไม่ใช่ให้เปลี่ยน)
+        const LIFF_ID = "2008560135-06VyMziu"; 
         const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwEPR9FARhVxyQu3_spLb47kue08an21zNlrpOb5Xg7-hr_4Ag3U726Wl-ICUTWY_F3nQ/exec"; 
 
         // --- GLOBAL STATE ---
@@ -226,11 +226,9 @@
 
                 if (data.status === 'success') {
                     if (data.isUserExist && data.hasRegisterName) {
-                        // CASE 1: มี User และมีชื่อแล้ว -> Show Card
                         renderCard(data.userData);
                         showScreen('card');
                     } else {
-                        // CASE 2: ยังไม่มี User หรือยังไม่มีชื่อ -> Show Form
                         showScreen('form');
                     }
                 } else {
@@ -244,7 +242,6 @@
         }
 
         async function saveToGAS(updateRegisterName, realName, nickname) {
-            // Show Loading
             Swal.fire({
                 title: 'กำลังบันทึก...',
                 text: 'กรุณารอซักครู่',
@@ -252,7 +249,6 @@
                 didOpen: () => Swal.showLoading()
             });
 
-            // Format Name: "RealName [Nickname]" or empty
             let finalRegisterName = "";
             if (updateRegisterName && (realName || nickname)) {
                 finalRegisterName = `${realName} [${nickname}]`.trim();
@@ -278,13 +274,11 @@
                 if (data.status === 'success') {
                     Swal.close();
                     
-                    // Update Local Data for Card
                     backendData.userData = {
                         lineRegisterName: finalRegisterName || "ไม่ระบุชื่อ",
                         memberId: data.memberId
                     };
 
-                    // Show Card
                     renderCard(backendData.userData);
                     showScreen('card');
                 } else {
@@ -312,27 +306,18 @@
                 return;
             }
 
-            // User-CHK = true/false handled by GAS logic (Update vs Insert)
-            // Just send data
             saveToGAS(true, realName, nickname);
         }
 
         function handleCancel() {
             if (backendData.isUserExist) {
-                // ถ้ามี User อยู่แล้ว กด Cancel คือจบการทำงาน (ปิด LIFF)
                 liff.closeWindow();
             } else {
-                // ถ้าเป็น User ใหม่ กด Cancel -> บันทึกพื้นฐาน (ไม่เอา RegisterName) -> แล้วจบ
-                saveToGAS(false, "", "").then(() => {
-                    // หลังจาก save basic success, show card or close? 
-                    // Prompt says: "ShowCard" after update.
-                });
+                saveToGAS(false, "", "").then(() => {});
             }
         }
 
         function editInfo() {
-            // Parse Name Back to Inputs
-            // Format: "RealName [Nickname]"
             const currentName = backendData.userData.lineRegisterName || "";
             const match = currentName.match(/^(.*)\s\[(.*)\]$/);
             
@@ -362,8 +347,16 @@
             const nameEl = document.getElementById('card-name');
             const idEl = document.getElementById('card-member-id');
 
+            // 1. Set Name
             nameEl.innerText = userData.lineRegisterName || "ไม่ระบุชื่อ";
-            idEl.innerText = userData.memberId || "V26-XXXX";
+            
+            // 2. Set Member ID (Hide if empty)
+            if (userData.memberId && userData.memberId.trim() !== "") {
+                idEl.innerText = userData.memberId;
+                idEl.classList.remove('hidden');
+            } else {
+                idEl.classList.add('hidden');
+            }
         }
 
         // Start App
