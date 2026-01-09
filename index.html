@@ -27,9 +27,10 @@
 
         /* Nexus Card Design with Image Background */
         .nexus-card-bg {
-            /* แก้ไขเป็น .png ตามที่ร้องขอ */
             background-image: url('./Digital Card.png'); 
-            background-size: cover;
+            /* ปรับเป็น 100% 100% เพื่อไม่ให้ภาพโดนตัดขอบ (Fit to container) */
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
             background-position: center;
             box-shadow: 0 15px 35px rgba(0,0,0,0.2);
         }
@@ -83,7 +84,7 @@
             <div class="bg-[#FFF8E1] p-4 rounded-lg border border-[#FFE082] mb-6">
                 <p class="text-[#6D4C41] text-sm leading-relaxed">
                     เพื่อให้ระบบส่งข้อความที่เหมาะสมกับคุณที่สุด <br>
-                    คุณสะดวกให้เราเรียกคุณว่าอะไรดีครับ?
+                    คุณ <span id="desc-displayname" class="font-bold text-[#5D4037]">...</span> สะดวกให้เราเรียกคุณว่าอะไรดีครับ?
                 </p>
             </div>
 
@@ -96,7 +97,7 @@
                 </div>
                 <div>
                     <label class="block text-[#5D4037] text-sm font-medium mb-1">ชื่อเล่น</label>
-                    <input type="text" id="input-nickname" placeholder="ตัวอย่าง: ยาย่า" 
+                    <input type="text" id="input-nickname" placeholder="ตัวอย่าง: ยาย่า อัลฟ่า7" 
                            class="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-[#8D6E63] focus:ring-2 focus:ring-[#8D6E63]/20 outline-none transition-all">
                 </div>
             </div>
@@ -119,12 +120,13 @@
             <!-- THE CARD -->
             <div class="nexus-card-bg w-full aspect-[1.586/1] rounded-xl relative text-white shadow-2xl transform transition-transform hover:scale-[1.01] duration-300 mb-8 overflow-hidden">
                 
-                <!-- Overlay Gradient (Optional: เพื่อให้อ่านง่ายขึ้นถ้าภาพพื้นหลังสว่างไป) -->
+                <!-- Overlay Gradient -->
                 <div class="absolute inset-0 bg-black/10"></div>
 
                 <!-- 1. Profile Picture (Top Right) -->
-                <div class="absolute top-4 right-4 z-10">
-                    <img id="card-profile-img" src="" class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white shadow-lg object-cover">
+                <!-- ปรับขนาดเล็กลงในมือถือ w-12 h-12 และขยับขึ้น top-3 เพื่อไม่ให้บังชื่อ -->
+                <div class="absolute top-3 right-3 md:top-4 md:right-4 z-10">
+                    <img id="card-profile-img" src="" class="w-12 h-12 md:w-20 md:h-20 rounded-full border-4 border-white shadow-lg object-cover">
                 </div>
 
                 <!-- 2. Name (Center) -->
@@ -148,13 +150,18 @@
                 <p class="text-[#6D4C41] text-sm">ต้องการแก้ไขชื่อ หรือไม่?</p>
                 <div class="grid grid-cols-2 gap-4">
                     <button onclick="editInfo()" class="py-3 rounded-lg border border-[#8D6E63] text-[#8D6E63] font-medium hover:bg-[#F5EDCB] transition-colors">
-                        แก้ไขข้อมูล
+                        แก้ไขชื่อ
                     </button>
                     <button onclick="confirmClose()" class="py-3 rounded-lg bg-[#005bea] text-white font-medium shadow-lg hover:bg-[#004bb5] transform active:scale-95 transition-all">
                         ถูกต้องแล้ว
                     </button>
                 </div>
             </div>
+        </div>
+
+        <!-- Version Display -->
+        <div class="absolute bottom-1 right-2 pointer-events-none">
+            <span class="text-[10px] text-gray-400 opacity-60">v1.3</span>
         </div>
 
     </div>
@@ -201,6 +208,7 @@
         // Update UI elements that don't need GAS data
         function updateUIWithProfile(profile) {
             document.getElementById('form-greeting').innerText = `สวัสดี คุณ ${profile.displayName}`;
+            document.getElementById('desc-displayname').innerText = profile.displayName; // Update name in description
             document.getElementById('form-profile-img').src = profile.pictureUrl;
             document.getElementById('card-profile-img').src = profile.pictureUrl;
         }
@@ -241,13 +249,16 @@
             }
         }
 
-        async function saveToGAS(updateRegisterName, realName, nickname) {
-            Swal.fire({
-                title: 'กำลังบันทึก...',
-                text: 'กรุณารอซักครู่',
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading()
-            });
+        // เพิ่ม isSilent param เพื่อไม่ให้แสดง Loading ตอนกด Cancel
+        async function saveToGAS(updateRegisterName, realName, nickname, isSilent = false) {
+            if (!isSilent) {
+                Swal.fire({
+                    title: 'กำลังบันทึก...',
+                    text: 'กรุณารอซักครู่',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+            }
 
             let finalRegisterName = "";
             if (updateRegisterName && (realName || nickname)) {
@@ -272,7 +283,7 @@
                 const data = await response.json();
 
                 if (data.status === 'success') {
-                    Swal.close();
+                    if (!isSilent) Swal.close();
                     
                     backendData.userData = {
                         lineRegisterName: finalRegisterName || "ไม่ระบุชื่อ",
@@ -286,7 +297,7 @@
                 }
 
             } catch (err) {
-                Swal.fire('Error', 'บันทึกข้อมูลไม่สำเร็จ', 'error');
+                if (!isSilent) Swal.fire('Error', 'บันทึกข้อมูลไม่สำเร็จ', 'error');
             }
         }
 
@@ -299,21 +310,21 @@
             if (!realName) {
                 Swal.fire({
                     icon: 'warning',
-                    title: 'กรุณากรอกชื่อจริง',
-                    text: 'เพื่อสิทธิประโยชน์ของท่าน',
+                    title: 'สะดวกให้เราเรียกคุณว่าอะไรดีครับ?', // เปลี่ยนข้อความ Validation
                     confirmButtonColor: '#8D6E63'
                 });
                 return;
             }
 
-            saveToGAS(true, realName, nickname);
+            saveToGAS(true, realName, nickname, false); // false = show loading
         }
 
         function handleCancel() {
             if (backendData.isUserExist) {
                 liff.closeWindow();
             } else {
-                saveToGAS(false, "", "").then(() => {});
+                // ส่งค่า true (isSilent) เพื่อไม่ให้ขึ้น Loading
+                saveToGAS(false, "", "", true).then(() => {});
             }
         }
 
