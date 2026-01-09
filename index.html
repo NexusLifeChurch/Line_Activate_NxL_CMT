@@ -130,8 +130,9 @@
                 </div>
 
                 <!-- 2. Name (Center) -->
+                <!-- Reduced Font Size: text-lg (mobile), text-2xl (desktop) -->
                 <div class="absolute inset-0 flex items-center justify-center px-4 z-10">
-                    <h1 id="card-name" class="text-white font-bold text-xl md:text-3xl text-center text-shadow break-words w-full leading-tight">
+                    <h1 id="card-name" class="text-white font-bold text-lg md:text-2xl text-center text-shadow break-words w-full leading-tight">
                         ...
                     </h1>
                 </div>
@@ -161,7 +162,7 @@
 
         <!-- Version Display -->
         <div class="absolute bottom-1 right-2 pointer-events-none">
-            <span class="text-[10px] text-gray-400 opacity-60">v1.3</span>
+            <span class="text-[10px] text-gray-400 opacity-60">v1.4</span>
         </div>
 
     </div>
@@ -287,6 +288,7 @@
                     
                     backendData.userData = {
                         lineRegisterName: finalRegisterName || "ไม่ระบุชื่อ",
+                        // ใช้ ID จาก Backend เท่านั้น (ถ้าส่งว่างมา ก็จะเป็นค่าว่าง)
                         memberId: data.memberId
                     };
 
@@ -362,10 +364,12 @@
             nameEl.innerText = userData.lineRegisterName || "ไม่ระบุชื่อ";
             
             // 2. Set Member ID (Hide if empty)
-            if (userData.memberId && userData.memberId.trim() !== "") {
+            // เช็คค่าว่างอย่างเคร่งครัด ถ้าไม่มีข้อมูลให้ซ่อน Element ทันที
+            if (userData.memberId && userData.memberId.toString().trim() !== "") {
                 idEl.innerText = userData.memberId;
                 idEl.classList.remove('hidden');
             } else {
+                idEl.innerText = "";
                 idEl.classList.add('hidden');
             }
         }
